@@ -1,0 +1,382 @@
+#!/bin/bash
+# Contrail configuration functions
+
+# Generate space separated list of ip:port from comma separated lists of ips
+
+CASSANDRA_IP_PORT_LIST=$(echo $CASSANDRA_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":9160"; print}')
+
+ZOOKEEPER_IP_PORT_LIST=$(echo $ZOOKEEPER_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":2181"; print}')
+
+COLLECTOR_IP_PORT_LIST=$(echo $COLLECTOR_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":8086"; print}')
+
+# Conditionnaly set ifmap port
+IFMAP_PORT=8443
+if [[ $USE_SSL == "True" ]]; then
+    IFMAP_PORT=8444
+fi
+
+function _fill_keystone_options()
+{
+    iniset -sudo $1 KEYSTONE auth_host $OPENSTACK_IP
+    iniset -sudo $1 KEYSTONE admin_user $CONTRAIL_ADMIN_USER
+    iniset -sudo $1 KEYSTONE admin_password $CONTRAIL_ADMIN_PASSWORD
+    iniset -sudo $1 KEYSTONE admin_tenant_name $CONTRAIL_ADMIN_PROJECT
+    iniset -sudo $1 KEYSTONE auth_port 5000
+    iniset -sudo $1 KEYSTONE auth_protocol http
+    if [ "$USE_MEMCACHE" == "True" ]; then #FIXME
+        iniset -sudo $config_file KEYSTONE memcache_servers '127.0.0.1:11211'
+    fi
+}
+
+function _fill_rabbit_options()
+{
+    iniset -sudo $config_file DEFAULTS rabbit_server $RABBIT_HOST
+    iniset -sudo $config_file DEFAULTS rabbit_port '5672'
+    iniset -sudo $config_file DEFAULTS rabbit_user $RABBIT_USERID
+    iniset -sudo $config_file DEFAULTS rabbit_password $RABBIT_PASSWORD
+}
+
+function _fill_certificate_options()
+{
+    if [[ "$USE_SSL" == "True" ]]; then
+        iniset -sudo $1 SECURITY use_certs $USE_SSL
+        iniset -sudo $1 SECURITY keyfile '/etc/contrail/ssl/private_keys/apiserver_key.pem'
+        iniset -sudo $1 SECURITY certfile '/etc/contrail/ssl/certs/apiserver.pem'
+        iniset -sudo $1 SECURITY ca_certs '/etc/contrail/ssl/certs/ca.pem'
+    fi
+}
+
+function contrail_config_cassandra()
+{
+    sudo sed -i "s/^\#MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"$CASS_MAX_HEAP_SIZE\"/" /etc/cassandra/cassandra-env.sh
+    sudo sed -i "s/^\#HEAP_NEWSIZE=.*/HEAP_NEWSIZE=\"$CASS_HEAP_NEWSIZE\"/" /etc/cassandra/cassandra-env.sh
+    #NOTE: it isn't safe to use SERVICE_LISTEN_ADDRESS here, as cassandra can't bind 0.0.0.0
+    sudo sed -i -e "s/listen_address:.*/listen_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
+    sudo sed -i -e "s/rpc_address:.*/rpc_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
+
+    sudo sed -ie "s/seeds:.*/seeds: $CASSANDRA_IP_LIST/" /etc/cassandra/cassandra.yaml
+
+    restart_service cassandra
+}
+
+#function contrail_config_zookeeper()
+#{
+#    no-op to fix post-install non start issue?
+#    restart_service zookeeper
+#}
+#
+#function contrail_config_redis()
+#{
+#    sudo sed -i "s/bind 127.0.0.1/bind $SERVICE_LISTEN_ADDRESS/g" /etc/redis/redis.conf
+#
+#    restart_service redis
+#}
+
+function contrail_config_api()
+{
+    local config_file="/etc/contrail/contrail-api.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
+    iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
+    iniset -sudo $config_file DEFAULTS ifmap_username 'api-server'
+    iniset -sudo $config_file DEFAULTS ifmap_password 'api-server'
+
+    iniset -sudo $config_file DEFAULTS multi_tenancy $MULTI_TENANCY
+    iniset -sudo $config_file DEFAULTS auth keystone
+
+    iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
+    iniset -sudo $config_file DEFAULTS disc_server_port 5998
+
+    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_port 2181
+
+    iniset -sudo $config_file DEFAULTS listen_ip_addr $CONTRAIL_LISTEN_ADDRESS
+    iniset -sudo $config_file DEFAULTS listen_port 8082
+
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/api.log'
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+
+    _fill_keystone_options $config_file
+    _fill_rabbit_options $config_file
+    _fill_certificate_options $config_file
+}
+
+function contrail_config_schema()
+{
+    local config_file="/etc/contrail/contrail-schema.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
+    iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
+    iniset -sudo $config_file DEFAULTS ifmap_username 'schema-transformer'
+    iniset -sudo $config_file DEFAULTS ifmap_password 'schema-transformer'
+
+    iniset -sudo $config_file DEFAULTS api_server_ip $APISERVER_IP
+    iniset -sudo $config_file DEFAULTS api_server_port 8082
+
+    iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
+    iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_port 2181
+
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/schema.log'
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+
+    _fill_keystone_options $config_file
+    _fill_rabbit_options $config_file
+    _fill_certificate_options $config_file
+}
+
+function contrail_config_svc_monitor()
+{
+    local config_file="/etc/contrail/contrail-svc-monitor.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
+    iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
+    iniset -sudo $config_file DEFAULTS ifmap_username 'svc_monitor'
+    iniset -sudo $config_file DEFAULTS ifmap_password 'svc_monitor'
+
+    iniset -sudo $config_file DEFAULTS api_server_ip $APISERVER_IP
+    iniset -sudo $config_file DEFAULTS api_server_port 8082
+
+    iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
+    iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_port 2181
+
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/svc-monitor.log'
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+
+    _fill_keystone_options $config_file
+    _fill_rabbit_options $config_file
+    _fill_certificate_options $config_file
+}
+
+function contrail_config_discovery()
+{
+    local config_file="/etc/contrail/contrail-discovery.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS listen_ip_addr $CONTRAIL_LISTEN_ADDRESS
+    iniset -sudo $config_file DEFAULTS listen_port 5998
+
+    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS zk_server_port 2181
+
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/discovery.log'
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+}
+
+function contrail_config_api_lib()
+{
+    local config_file="/etc/contrail/vnc_api_lib.ini"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file global WEB_SERVER APISERVER_IP
+    iniset -sudo $config_file global WEB_PORT 8082
+    iniset -sudo $config_file global BASE_URL  '/'
+
+    iniset -sudo $config_file auth AUTHN_TYPE  'keystone'
+    iniset -sudo $config_file auth AUTHN_PORT  5000
+    iniset -sudo $config_file auth AUTHN_SERVER $OPENSTACK_IP
+}
+
+function contrail_config_control()
+{
+    local config_file="/etc/contrail/contrail-control.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
+    iniset -sudo $config_file DEFAULT hostip $CONTROL_IP
+
+    iniset -sudo $config_file IFMAP user $CONTROL_IP
+    iniset -sudo $config_file IFMAP password $CONTROL_IP
+
+    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+    iniset -sudo $config_file DISCOVERY port 5998
+
+    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/control.log'
+    iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULT log_local 1
+
+    _fill_certificate_options $config_file
+}
+
+function contrail_config_collector()
+{
+    local config_file="/etc/contrail/contrail-collector.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
+    iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
+
+    iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULT zookeeper_server_list $ZOOKEEPER_IP_PORT_LIST
+
+    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+    iniset -sudo $config_file DISCOVERY port 5998
+
+    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/collector.log'
+    iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULT log_local 1
+}
+
+function contrail_config_analytics_api()
+{
+    local config_file="/etc/contrail/contrail-analytics-api.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULT host_ip $COLLECTOR_IP
+    iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
+
+    iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+    iniset -sudo $config_file DISCOVERY port 5998
+
+    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/analytics-api.log'
+    iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULT log_local 1
+}
+
+function contrail_config_query()
+{
+    local config_file="/etc/contrail/contrail-query-engine.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
+    iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
+
+    iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+    iniset -sudo $config_file DISCOVERY port 5998
+
+    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/query-engine.log'
+    iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULT log_local 1
+}
+
+function contrail_config_dns()
+{
+    local config_file="/etc/contrail/dns/contrail-dns.conf"
+    sudo truncate -s 0 $config_file
+
+    local named_log="/var/log/contrail/named.log"
+    local rndc_secret=$(openssl rand -base64 32)
+
+    iniset -sudo $config_file DEFAULT hostip $CONTROL_IP
+    iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
+
+    iniset -sudo $config_file DEFAULT named_log_file $named_log
+    iniset -sudo $config_file DEFAULT rndc_secret $rndc_secret
+    iniset -sudo $config_file DEFAULT rndc_config_file 'contrail-rndc.conf'
+
+    iniset -sudo $config_file IFMAP user ${CONTROL_IP}.dns
+    iniset -sudo $config_file IFMAP password ${CONTROL_IP}.dns
+
+    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+    iniset -sudo $config_file DISCOVERY port 5998
+
+    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/dns.log'
+    iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULT log_local 1
+
+    sudo sed -i "s|secret.*|secret \"$rndc_secret\";|" /etc/contrail/dns/contrail-rndc.conf
+    sudo sed -i "s|secret.*|secret \"$rndc_secret\";|" /etc/contrail/dns/contrail-named.conf
+
+    #FIXME log file must be created with correct permissions for named to start
+    #touch $named_log
+    #sudo chown $(id -u):root $named_log
+    # https://bugs.launchpad.net/opencontrail/+bug/1479323
+    #mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
+    #sudo chown root:root ${CONTRAIL_DEST}/build/var/run/named/
+}
+
+function contrail_config_vrouter_agent()
+{
+    local config_file="/etc/contrail/contrail-vrouter-agent.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+    iniset -sudo $config_file DISCOVERY port 5998
+
+    iniset -sudo $config_file METADATA metadata_proxy_secret 'metadatasecret'
+    iniset -sudo $NOVA_CONF neutron metadata_proxy_shared_secret 'metadatasecret'
+    iniset -sudo $NOVA_CONF neutron service_metadata_proxy 'True'
+
+    iniset -sudo $config_file NETWORKS control_network_ip $VHOST_INTERFACE_IP #FIXME ?
+
+    iniset -sudo $config_file VIRTUAL-HOST-INTERFACE ip $VHOST_INTERFACE_CIDR
+    iniset -sudo $config_file VIRTUAL-HOST-INTERFACE name vhost0
+    iniset -sudo $config_file VIRTUAL-HOST-INTERFACE gateway $DEFAULT_GW
+    iniset -sudo $config_file VIRTUAL-HOST-INTERFACE physical_interface $VHOST_INTERFACE_NAME
+
+    iniset -sudo $config_file SERVICE-INSTANCE netns_command $(which opencontrail-vrouter-netns)
+    iniset -sudo $config_file SERVICE-INSTANCE docker_command $(which opencontrail-vrouter-docker)
+
+    if [[ "$Q_L3_ENABLED" == "True" ]]; then
+        iniset -sudo $config_file GATEWAY-0 interface vgw
+        iniset -sudo $config_file GATEWAY-0 ip_blocks $FLOATING_RANGE
+        iniset -sudo $config_file GATEWAY-0 routing_instance "default-domain:admin:$PUBLIC_NETWORK_NAME:$PUBLIC_NETWORK_NAME"
+        iniset -sudo $config_file GATEWAY-0 routes '0.0.0.0/0'
+    fi
+
+    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/vrouter.log'
+    iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULT log_local 1
+}
+
+function contrail_config_irond_users()
+{
+    local config_file="/etc/ifmap-server/basicauthusers.properties"
+
+    #FIXME Required?
+    #echo "$CONTROL_IP=$CFGM_IP--0000000001-1" | sudo tee "/etc/ifmap-server/publisher.properties"
+
+    #sed -i '/^# Contrail/Q' $config_file
+    #echo '# Contrail users' | sudo tee $config_file
+
+    echo 'api-server:api-server' | sudo tee $config_file
+    echo 'schema-transformer:schema-transformer' | sudo tee -a $config_file
+    echo 'svc_monitor:svc_monitor' | sudo tee -a $config_file
+
+    for ip in ${CONTROL_IP_LIST[@]};
+    do
+        sudo echo "$ip:$ip" | sudo tee -a $config_file
+        sudo echo "$ip.dns:$ip.dns" | sudo tee -a $config_file
+    done
+    sudo service ifmap-server restart
+}
+
+
+function contrail_config_qemu()
+{
+    local config_file="/etc/libvirt/qemu.conf"
+
+    if sudo grep -qve '^cgroup_device_acl' /etc/libvirt/qemu.conf; then
+        sudo bash -c "cat >> $config_file" <<- "EOF"
+cgroup_device_acl = [
+    "/dev/null", "/dev/full", "/dev/zero",
+    "/dev/random", "/dev/urandom",
+    "/dev/ptmx", "/dev/kvm", "/dev/kqemu",
+    "/dev/rtc", "/dev/hpet","/dev/net/tun",
+]
+EOF
+    fi
+
+}
+

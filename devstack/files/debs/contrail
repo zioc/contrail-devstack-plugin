@@ -1,0 +1,49 @@
+#NOTE: for now, this file MUST have the same name as the plugin, eg:
+# enable_plugin contrail [git url]
+
+scons
+autoconf
+libtool
+flex
+bison
+
+python-sphinx
+python-lxml
+# npm depends on python-pkg-ressources but not on python-setuptools
+# in order to avoid confusion among versions, use distr'os setuptool
+python-setuptools
+
+libboost-dev
+libboost-chrono-dev
+libboost-filesystem-dev
+libboost-program-options-dev
+libboost-regex-dev
+libboost-system-dev
+libboost-python-dev
+
+
+libtbb-dev
+liblog4cplus-dev
+libcurl4-openssl-dev
+libprotobuf-dev
+protobuf-compiler
+
+librdkafka-dev
+
+#libevent-dev
+#libxml2-dev
+#libxslt-dev
+
+libzookeeper-mt-dev
+
+#cassandra-driver
+
+#in opencontrail ppa
+libipfix-dev
+
+
+nodejs
+npm
+zookeeperd
+ifmap-server
+redis-server

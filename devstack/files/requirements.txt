@@ -1,0 +1,46 @@
+# This file could have been generated using the following command, however,
+# as there are some missing requirements, and some other doesn't exist:
+
+#FIXME:
+#sandesh_common    # stats-daemon requirements.txt doesn't exists
+jsonpickle         # required by schema, but not in its requirements.txt
+cassandra-driver   # required by analytics-api, but not in its requirements.txt
+kafka              # required by analytics-api
+
+contrail-api-cli   # as it's convenient
+
+#find $CONTRAIL_DEST -name requirements.txt -exec cat {} \; \
+# awk '$1 !~ /^#|^glance|^heat|^keystone|^neutron|^nova/ {print $1}' | \
+# sort -u | xargs -I % sudo -HE pip install %
+
+# provides
+
+bitarray>=0.8.0
+bottle==0.12.8
+cfgm_common
+ConfigParser
+consistent-hash
+contrail-vrouter-api
+discoveryclient
+docker-py
+eventlet
+gevent==1.1a2
+geventhttpclient==1.0a
+kazoo
+kombu
+lxml>=2.3.3
+netaddr>=0.7.5
+netifaces
+oslo.config
+prettytable
+psutil>=0.6.0
+pycassa>=1.7.2
+redis
+requests
+sandesh
+sandesh-common
+stevedore
+thrift
+vnc_api
+xmltodict
+

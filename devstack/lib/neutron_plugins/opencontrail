@@ -1,0 +1,52 @@
+#!/bin/bash
+# Contrail neutron plugin configuration functions
+
+function neutron_plugin_create_nova_conf() {
+    :
+}
+
+function neutron_plugin_configure_common() {
+    Q_PLUGIN_CONF_PATH=etc/neutron/plugins/opencontrail
+    Q_PLUGIN_CONF_FILENAME=ContrailPlugin.ini
+    Q_PLUGIN_CLASS=${Q_PLUGIN_CLASS:-neutron_plugin_contrail.plugins.opencontrail.contrail_plugin_v3.NeutronPluginContrailCoreV3}
+}
+
+
+function neutron_plugin_configure_service() {
+    iniset /$Q_PLUGIN_CONF_FILE CONTRAIL multi_tenancy $MULTI_TENANCY
+    iniset /$Q_PLUGIN_CONF_FILE CONTRAIL api_server_port $APISERVER_PORT
+    iniset /$Q_PLUGIN_CONF_FILE CONTRAIL api_server_ip $APISERVER_IP
+
+    local PY_PLUGIN_PATH=$(python -c "import neutron_plugin_contrail; print neutron_plugin_contrail.__path__[0]")
+    iniset $NEUTRON_CONF quotas quota_driver neutron.quota.ConfDriver
+    iniset $NEUTRON_CONF DEFAULT api_extensions_path extensions:$PY_PLUGIN_PATH/extensions
+}
+
+function neutron_plugin_setup_interface_driver() {
+    :
+}
+
+function neutron_plugin_configure_debug_command() {
+    :
+}
+
+function is_neutron_ovs_base_plugin() {
+    # False
+    return 1
+}
+function has_neutron_plugin_security_group() {
+    # True
+    return 0
+}
+
+function neutron_plugin_check_adv_test_requirements() {
+    return 0
+}
+
+function neutron_plugin_create_nova_conf {
+    if [[ "stable/juno stable/icehouse" =~ $NOVA_BRANCH ]]; then
+        iniset $NOVA_CONF DEFAULT network_api_class nova_contrail_vif.contrailvif.ContrailNetworkAPI
+    fi
+
+}
+

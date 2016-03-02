@@ -1,0 +1,111 @@
+#!/bin/bash
+# Contrail devstack plugin settings, loaded by devstack in "source" phase
+
+# Make sure neutron agents aren't enabled
+disable_service n-net q-agt q-l3 q-dhcp q-meta q-dhcp q-lbaas
+
+# Service needs to be enabled, otherwie they won't be started by screen_it
+enable_service vrouter api-srv disco svc-mon schema control collector analytics-api query-engine dns named ui-jobs ui-webs
+
+# General settings
+#----------------
+
+# Devstack source plugin with $dir varaiable set to plugin's directory
+CONTRAIL_PLUGIN_DIR="$dir/devstack"
+#PLUGIN_DIR=$(dirname "${BASH_SOURCE[0]}")
+
+CONTRAIL_SCREEN_NAME=${CONTRAIL_SCREEN_NAME:-"contrail"}
+CONTRAIL_ADMIN_USER=${CONTRAIL_ADMIN_USER:-"admin"}
+CONTRAIL_ADMIN_PASSWORD=${CONTRAIL_ADMIN_PASSWORD:-$ADMIN_PASSWORD}
+CONTRAIL_ADMIN_PROJECT=${CONTRAIL_ADMIN_PROJECT:-"admin"}
+
+# Contrail neutron plugin configuration functions
+source $CONTRAIL_PLUGIN_DIR/lib/neutron_plugins/opencontrail
+
+# Source / build options
+#-----------------------
+
+CONTRAIL_REPO=${CONTRAIL_REPO:-https://github.com/juniper/contrail-vnc}
+CONTRAIL_BRANCH=${CONTRAIL_BRANCH:-master}
+
+CONTRAIL_DEST="$DEST/contrail"
+
+SCONS_TARGET=${SCONS_TARGET:-production}
+SCONS_JOBS=${SCONS_JOBS:-1}
+
+SCONS_ARGS="--opt=$SCONS_TARGET --root=/ install"
+if [ $SCONS_JOBS -gt 1 ]; then
+    SCONS_ARGS="-j$NB_JOBS $SCONS_ARGS"
+fi
+
+BUILD_OPT=${BUILD_OPT:-production}
+
+# vrouter kernel module options
+#------------------------------
+
+# force the reload of vrouter kernel module in stack.sh
+RELOAD_VROUTER=$(trueorfalse False $RELOAD_VROUTER)
+# kernel modules options
+VR_KMOD_OPTS=${VR_KMOD_OPTS:-"vr_flow_entries=4096 vr_oflow_entries=512 vr_bridge_entries=128"}
+
+# Services configuration
+#-----------------------
+
+MULTI_TENANCY=${MULTI_TENANCY:-False}
+
+CASS_MAX_HEAP_SIZE=${CASS_MAX_HEAP_SIZE:-"500M"}
+CASS_HEAP_NEWSIZE=${CASS_HEAP_NEWSIZE:-"100M"}
+
+# Networking
+#-----------
+
+CONTRAIL_HOSTNAME=${CONTRAIL_HOSTNAME:-$(hostname -s)}
+
+CONTRAIL_LISTEN_ADDRESS=${CONTRAIL_LISTEN_ADDRESS:-$SERVICE_LISTEN_ADDRESS}
+CONFIG_IP=${CONFIG_IP:-$HOST_IP}
+
+# Determine physical interface on which vrouter will plug:
+#  -first, use VROUTER_ if provided in local.conf
+#  -otherwise, use the default interface (used to reach the default gateway)
+#  -if vhost0 is already inserted, use vif to find the physical interface
+
+DEFAULT_IF=$(ip -4 route | awk '$1=="default" {print $5}')
+
+VHOST_INTERFACE_CIDR=${VHOST_INTERFACE_CIDR:-$(ip -o -4 addr show $DEFAULT_IF | awk '{print $4}')}
+VHOST_INTERFACE_IP=${VROUTER_IP:-$(echo $VHOST_INTERFACE_CIDR | sed 's|/.*||')}
+if [[ $DEFAULT_IF == "vhost0" ]]; then
+    # We're running on vhost0, it should be safe to use vif as it should have been build && used alonside with kernel module
+    VHOST_INTERFACE_NAME=${VHOST_INTERFACE_NAME:-$(sudo vif --list | awk '{if(/Type:Physical/){print iface}};{iface=$3}')}
+else
+    VHOST_INTERFACE_NAME=${VHOST_INTERFACE_NAME:-$DEFAULT_IF}
+fi
+DEFAULT_GW=$(ip -4 route | awk '$1=="default" {print $3}')
+
+OPENSTACK_IP=${OPENSTACK_IP:-$CONFIG_IP}
+APISERVER_IP=${APISERVER_IP:-$CONFIG_IP}
+COLLECTOR_IP=${COLLECTOR_IP:-$CONFIG_IP}
+DISCOVERY_IP=${DISCOVERY_IP:-$CONFIG_IP}
+CASSANDRA_IP=${CASSANDRA_IP:-$CONFIG_IP}
+IFMAP_IP=${IFMAP_IP:-$CONFIG_IP}
+
+CONTROL_IP=${CONTROL_IP:-$HOST_IP}
+COMPUTE_HOST_IP=${COMPUTE_HOST_IP:-$HOST_IP}
+
+# Comma separated lists of ip addresses of nodes in the cluster
+CLUSTER_IP_LIST=${CLUSTER_IP_LIST:-$CONFIG_IP}
+
+CONTROL_IP_LIST=${CONTROL_IP_LIST:-$CLUSTER_IP_LIST}
+COLLECTOR_IP_LIST=${COLLECTOR_IP_LIST:-$CLUSTER_IP_LIST}
+ZOOKEEPER_IP_LIST=${ZOOKEEPER_IP_LIST:-$CLUSTER_IP_LIST}
+CASSANDRA_IP_LIST=${CASSANDRA_IP_LIST:-$CLUSTER_IP_LIST}
+
+# Third party repos
+#------------------
+
+# devstack only sources this file during source stage, and doesn't invoke plugin.sh
+# as we don't have an "extra-repo" phase, call it from here if sourced by stack.sh
+PARENT_SCRIPT=$(caller 2 | awk '{print $3}')
+if [[ -n "$PARENT_SCRIPT" && "$(basename $PARENT_SCRIPT)"  == "stack.sh" ]]; then
+    source $CONTRAIL_PLUGIN_DIR/plugin.sh stack source
+fi
+

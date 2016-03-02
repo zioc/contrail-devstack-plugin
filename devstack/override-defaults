@@ -1,0 +1,5 @@
+Q_PLUGIN=${Q_PLUGIN:-opencontrail}
+# Let devstack create public network
+Q_L3_ENABLED=${Q_L3_ENABLED:-True}
+# This is false by default in pre-mitaka releases
+Q_L3_ROUTER_PER_TENANT=${Q_L3_ROUTER_PER_TENANT:-True}

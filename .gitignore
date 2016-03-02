@@ -1,0 +1,6 @@
+# As this repo will live in contrail repo target, make sure we won't track
+# anything outside devstack directory
+/*
+!README.md
+!.gitignore
+!/devstack
