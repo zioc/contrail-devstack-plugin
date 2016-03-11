@@ -87,6 +87,7 @@ function insert_vrouter() {
     sudo ip link set vhost0 up
     sudo ip addr add $VHOST_INTERFACE_CIDR dev vhost0
     sudo ip addr flush dev $VHOST_INTERFACE_NAME
+    #TODO: kill dhclient if running on physical interface
     if ! ip route | grep -q default; then
         echo "Re-addd default route"
         sudo ip route add default via $DEFAULT_GW
@@ -144,7 +145,7 @@ function start_contrail() {
     sudo chmod 777 /var/log/contrail
 
     run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
-    run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf && tailf /var/log/contrail/api.log"
+    run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf"
     # Wait for api
     if is_service_enabled api-srv && ! wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 30 -q -O /dev/null http://$APISERVER_IP:8082; then
         echo "Contrail api failed to start"
@@ -237,7 +238,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
     fi
 
 elif [[ "$1" == "stack" && "$2" == "install" ]]; then
-    # Called after services installation & configuration
+    # Called after services installation
 
     if is_service_enabled q-svc; then
         # Build contrail neutron plugin as it isn't handled by scons
@@ -263,17 +264,13 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
     [[ "$RELOAD_VROUTER" == "True" ]] && remove_vrouter
     insert_vrouter
 
-    #FIXME: Contrail api must be started before neutron, this is why it is done
-    # here instead of post-config phase, but is this really desirable?
-    # maybe neutron plugin should reconnect instead?
-    echo_summary "Starting contrail"
-    # Stack.sh configures rabbit after install phase, as we need it to start contrail,
-    # we have to prepone rabbit configuration here as lon as contrail is not started in post-config
-    restart_rpc_backend
-    start_contrail
-
 elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
-    # Called after services start
+    # Called after services configuration
+
+    echo_summary "Starting contrail"
+    #FIXME: Contrail api _must_ be started before neutron, this is why it must be done here.
+    # But shouldn't neutron plugin reconnect if api is unreacheable?
+    start_contrail
 
     echo_summary "Provisionning contrail"
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Contrail devstack plugin settings, loaded by devstack in "source" phase
 
-# Make sure nova-network an neutron agents aren't enabled
+# Make sure nova-network and neutron agents aren't enabled
 disable_service n-net q-agt q-l3 q-dhcp q-meta q-dhcp q-lbaas
 
 CONTRAIL_SVC_LIST="vrouter api-srv disco svc-mon schema control collector analytics-api query-engine dns named ui-jobs ui-webs"

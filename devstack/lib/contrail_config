@@ -98,7 +98,6 @@ function contrail_config_api()
     iniset -sudo $config_file DEFAULTS listen_ip_addr $CONTRAIL_LISTEN_ADDRESS
     iniset -sudo $config_file DEFAULTS listen_port 8082
 
-    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/api.log'
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULTS log_local 1
 
@@ -126,7 +125,6 @@ function contrail_config_schema()
     iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
 
-    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/schema.log'
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULTS log_local 1
 
@@ -154,7 +152,6 @@ function contrail_config_svc_monitor()
     iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
 
-    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/svc-monitor.log'
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULTS log_local 1
 
@@ -175,7 +172,6 @@ function contrail_config_discovery()
     iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
 
-    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/discovery.log'
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULTS log_local 1
 }
@@ -208,7 +204,6 @@ function contrail_config_control()
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
 
-    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/control.log'
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
 
@@ -229,7 +224,6 @@ function contrail_config_collector()
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
 
-    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/collector.log'
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
 }
@@ -242,12 +236,14 @@ function contrail_config_analytics_api()
     iniset -sudo $config_file DEFAULT host_ip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
+    #REVISIT: analytics api currently fails with default value (15)
+    iniset -sudo $config_file DEFAULT partitions 0
+
     iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
-    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY port 5998
+    iniset -sudo $config_file DISCOVERY disc_server_ip $DISCOVERY_IP
+    iniset -sudo $config_file DISCOVERY disc_server_ip 5998
 
-    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/analytics-api.log'
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
 }
@@ -265,7 +261,6 @@ function contrail_config_query()
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
 
-    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/query-engine.log'
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
 }
@@ -291,7 +286,6 @@ function contrail_config_dns()
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
 
-    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/dns.log'
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
 
@@ -302,7 +296,7 @@ function contrail_config_dns()
     #touch $named_log
     #sudo chown $(id -u):root $named_log
     # https://bugs.launchpad.net/opencontrail/+bug/1479323
-    #mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
+    sudo mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
     #sudo chown root:root ${CONTRAIL_DEST}/build/var/run/named/
 }
 
@@ -335,7 +329,7 @@ function contrail_config_vrouter_agent()
         iniset -sudo $config_file GATEWAY-0 routes '0.0.0.0/0'
     fi
 
-    iniset -sudo $config_file DEFAULT log_file '/var/log/contrail/vrouter.log'
+    iniset -sudo $config_file DEFAULT log_file ' '
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
 }
