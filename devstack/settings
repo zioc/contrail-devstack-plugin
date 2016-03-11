@@ -1,11 +1,16 @@
 #!/bin/bash
 # Contrail devstack plugin settings, loaded by devstack in "source" phase
 
-# Make sure neutron agents aren't enabled
+# Make sure nova-network an neutron agents aren't enabled
 disable_service n-net q-agt q-l3 q-dhcp q-meta q-dhcp q-lbaas
 
-# Service needs to be enabled, otherwie they won't be started by screen_it
-enable_service vrouter api-srv disco svc-mon schema control collector analytics-api query-engine dns named ui-jobs ui-webs
+CONTRAIL_SVC_LIST="vrouter api-srv disco svc-mon schema control collector analytics-api query-engine dns named ui-jobs ui-webs"
+
+# Check if some specific services have been enbled in local.conf
+if ! is_service_enabled $CONTRAIL_SVC_LIST; then
+    # If not, enable all the services
+    enable_service $CONTRAIL_SVC_LIST
+fi
 
 # General settings
 #----------------
@@ -28,7 +33,7 @@ source $CONTRAIL_PLUGIN_DIR/lib/neutron_plugins/opencontrail
 CONTRAIL_REPO=${CONTRAIL_REPO:-https://github.com/juniper/contrail-vnc}
 CONTRAIL_BRANCH=${CONTRAIL_BRANCH:-master}
 
-CONTRAIL_DEST="$DEST/contrail"
+CONTRAIL_DEST=${CONTRAIL_DEST:-$DEST/contrail}
 
 SCONS_TARGET=${SCONS_TARGET:-production}
 SCONS_JOBS=${SCONS_JOBS:-1}
@@ -44,7 +49,7 @@ BUILD_OPT=${BUILD_OPT:-production}
 #------------------------------
 
 # force the reload of vrouter kernel module in stack.sh
-RELOAD_VROUTER=$(trueorfalse False $RELOAD_VROUTER)
+RELOAD_VROUTER=$(trueorfalse False RELOAD_VROUTER)
 # kernel modules options
 VR_KMOD_OPTS=${VR_KMOD_OPTS:-"vr_flow_entries=4096 vr_oflow_entries=512 vr_bridge_entries=128"}
 

@@ -143,29 +143,25 @@ function start_contrail() {
     #chown $STACK_USER:$STACK_USER /var/log/contrail
     sudo chmod 777 /var/log/contrail
 
-    if is_service_enabled vrouter; then
-        run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
+    run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
+    run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf && tailf /var/log/contrail/api.log"
+    # Wait for api
+    if is_service_enabled api-srv && ! wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 30 -q -O /dev/null http://$APISERVER_IP:8082; then
+        echo "Contrail api failed to start"
+        exit 1
     fi
-    if is_service_enabled api-srv; then
-        run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf && tailf /var/log/contrail/api.log"
-        #Wait for api
-        if ! wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 30 -q -O /dev/null http://$APISERVER_IP:8082; then
-            echo "Contrail api failed to start"
-            exit 1
-        fi
-        run_process disco "contrail-discovery --conf_file /etc/contrail/contrail-discovery.conf"
-        run_process svc-mon "contrail-svc-monitor --conf_file /etc/contrail/contrail-svc-monitor.conf"
-        run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
-        run_process control "sudo contrail-control --conf_file /etc/contrail/contrail-control.conf"
-        run_process collector "contrail-collector --conf_file /etc/contrail/contrail-collector.conf"
-        run_process analytics-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
-        run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
-        run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
-        run_process named "sudo contrail-named -f -c /etc/contrail/dns/contrail-named.conf"
+    run_process disco "contrail-discovery --conf_file /etc/contrail/contrail-discovery.conf"
+    run_process svc-mon "contrail-svc-monitor --conf_file /etc/contrail/contrail-svc-monitor.conf"
+    run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
+    run_process control "sudo contrail-control --conf_file /etc/contrail/contrail-control.conf"
+    run_process collector "contrail-collector --conf_file /etc/contrail/contrail-collector.conf"
+    run_process analytics-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
+    run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
+    run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
+    run_process named "sudo contrail-named -f -c /etc/contrail/dns/contrail-named.conf"
 
-        run_process ui-jobs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs jobServerStart.js"
-        run_process ui-webs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs webServerStart.js"
-    fi
+    run_process ui-jobs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs jobServerStart.js"
+    run_process ui-webs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs webServerStart.js"
 
     SCREEN_NAME="$STACK_SCREEN_NAME"
 }
@@ -202,7 +198,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
     fetch_contrail
 
-    if is_service_enabled q-svc; then
+    if is_service_enabled api-srv disco svc-mon schema control collector analytics-api query-engine dns named; then
         install_cassandra
         install_cassandra_cpp_driver
 
@@ -225,7 +221,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         configure_webui
 
     fi
-    if is_service_enabled n-cpu ; then
+    if is_service_enabled vrouter; then
         echo_summary "Building contrail vrouter"
 
         cd $CONTRAIL_DEST
@@ -246,7 +242,8 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
     if is_service_enabled q-svc; then
         # Build contrail neutron plugin as it isn't handled by scons
         # It should happen after neutron installation, as it depends on neutron
-        setup_develop $CONTRAIL_DEST/openstack/neutron_plugin
+        #FIXME? as contrail neutron plugin misses a setup.cfg, we wan't use setup_develop
+        setup_package $CONTRAIL_DEST/openstack/neutron_plugin -e
     fi
 
     echo_summary "Configuring contrail"
@@ -270,6 +267,9 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
     # here instead of post-config phase, but is this really desirable?
     # maybe neutron plugin should reconnect instead?
     echo_summary "Starting contrail"
+    # Stack.sh configures rabbit after install phase, as we need it to start contrail,
+    # we have to prepone rabbit configuration here as lon as contrail is not started in post-config
+    restart_rpc_backend
     start_contrail
 
 elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then

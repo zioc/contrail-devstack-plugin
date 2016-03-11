@@ -185,7 +185,7 @@ function contrail_config_api_lib()
     local config_file="/etc/contrail/vnc_api_lib.ini"
     sudo truncate -s 0 $config_file
 
-    iniset -sudo $config_file global WEB_SERVER APISERVER_IP
+    iniset -sudo $config_file global WEB_SERVER $APISERVER_IP
     iniset -sudo $config_file global WEB_PORT 8082
     iniset -sudo $config_file global BASE_URL  '/'
 
