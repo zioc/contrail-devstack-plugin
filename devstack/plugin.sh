@@ -96,6 +96,8 @@ function insert_vrouter() {
 
 function remove_vrouter() {
 
+    ! lsmod | grep -q vrouter && return 0
+
     echo_summary "Removing vrouter kernel module"
 
     sudo ip addr add $VHOST_INTERFACE_CIDR dev $VHOST_INTERFACE_NAME
@@ -109,7 +111,6 @@ function remove_vrouter() {
     #NOTE: as it is executed in stack.sh, vrouter-agent shoudn't be running, we should be able to remove vrouter module
     sudo rmmod vrouter
 }
-
 
 function start_contrail() {
     # Start contrail in an independant screen
@@ -218,9 +219,6 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         # automatically, we have to manage their installation.
         pip_install -r $CONTRAIL_PLUGIN_DIR/files/requirements.txt
 
-        # Fetch 3rd party and configure webui
-        configure_webui
-
     fi
     if is_service_enabled vrouter; then
         echo_summary "Building contrail vrouter"
@@ -235,6 +233,10 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         # Build vrouter kernel module
         sudo -E scons $SCONS_ARGS vrouter
         cd $TOP_DIR
+    fi
+    if is_service_enabled ui-webs ui-jobs; then
+        # Fetch 3rd party and install webui
+        configure_webui
     fi
 
 elif [[ "$1" == "stack" && "$2" == "install" ]]; then
@@ -268,7 +270,7 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
     # Called after services configuration
 
     echo_summary "Starting contrail"
-    #FIXME: Contrail api _must_ be started before neutron, this is why it must be done here.
+    #FIXME: Contrail api must be started before neutron, this is why it must be done here.
     # But shouldn't neutron plugin reconnect if api is unreacheable?
     start_contrail
 

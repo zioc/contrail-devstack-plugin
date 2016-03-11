@@ -35,7 +35,7 @@ oslo.config
 prettytable
 psutil>=0.6.0
 pycassa>=1.7.2
-redis!=2.10.5
+redis
 requests
 sandesh
 sandesh-common

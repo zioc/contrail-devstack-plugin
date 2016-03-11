@@ -13,7 +13,7 @@ Requirements
 
 As it'll be running openstack + opencontrail, the target system needs a
 consequent amount of RAM. At least 6Gb are required to run all services.
-8Gb and more will be more comfortable if you intent to run sime VMs.
+8Gb and more will be more comfortable if you intend to run some VMs.
 
 Start a contrail cloud
 ======================

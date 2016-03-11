@@ -242,7 +242,7 @@ function contrail_config_analytics_api()
     iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
     iniset -sudo $config_file DISCOVERY disc_server_ip $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY disc_server_ip 5998
+    iniset -sudo $config_file DISCOVERY disc_server_port 5998
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
@@ -293,11 +293,8 @@ function contrail_config_dns()
     sudo sed -i "s|secret.*|secret \"$rndc_secret\";|" /etc/contrail/dns/contrail-named.conf
 
     #FIXME log file must be created with correct permissions for named to start
-    #touch $named_log
-    #sudo chown $(id -u):root $named_log
-    # https://bugs.launchpad.net/opencontrail/+bug/1479323
-    sudo mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
-    #sudo chown root:root ${CONTRAIL_DEST}/build/var/run/named/
+    sudo chown mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
+
 }
 
 function contrail_config_vrouter_agent()
