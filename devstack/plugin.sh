@@ -160,7 +160,8 @@ function start_contrail() {
     run_process analytics-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
     run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
     run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
-    run_process named "sudo contrail-named -f -c /etc/contrail/dns/contrail-named.conf"
+    #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in cmdline to retrieve bind status
+    run_process named "sudo /usr/bin/contrail-named -f -c /etc/contrail/dns/contrail-named.conf"
 
     run_process ui-jobs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs jobServerStart.js"
     run_process ui-webs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs webServerStart.js"
