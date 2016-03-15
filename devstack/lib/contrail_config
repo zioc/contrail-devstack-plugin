@@ -54,26 +54,34 @@ function contrail_config_cassandra()
     sudo sed -i "s/^\#MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"$CASS_MAX_HEAP_SIZE\"/" /etc/cassandra/cassandra-env.sh
     sudo sed -i "s/^\#HEAP_NEWSIZE=.*/HEAP_NEWSIZE=\"$CASS_HEAP_NEWSIZE\"/" /etc/cassandra/cassandra-env.sh
     #NOTE: it isn't safe to use SERVICE_LISTEN_ADDRESS here, as cassandra can't bind 0.0.0.0
-    sudo sed -i -e "s/listen_address:.*/listen_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
-    sudo sed -i -e "s/rpc_address:.*/rpc_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
+    sudo sed -i "s/listen_address:.*/listen_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
+    sudo sed -i "s/rpc_address:.*/rpc_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
 
-    sudo sed -ie "s/seeds:.*/seeds: $CASSANDRA_IP_LIST/" /etc/cassandra/cassandra.yaml
+    sudo sed -i "s/seeds:.*/seeds: $CASSANDRA_IP_LIST/" /etc/cassandra/cassandra.yaml
 
     restart_service cassandra
 }
 
-#function contrail_config_zookeeper()
-#{
-#    no-op to fix post-install non start issue?
-#    restart_service zookeeper
-#}
-#
-#function contrail_config_redis()
-#{
-#    sudo sed -i "s/bind 127.0.0.1/bind $SERVICE_LISTEN_ADDRESS/g" /etc/redis/redis.conf
-#
-#    restart_service redis
-#}
+function contrail_config_zookeeper()
+{
+    local config_file="/etc/zookeeper/conf/zoo.cfg"
+    sudo sed -i '/^server.*/d' $config_file
+    local i=1
+    for ip in $(echo $ZOOKEEPER_IP_LIST | awk -F "," '{$1=$1; print}'); do
+        if [[ "$ip" != "$ZOOKEEPER_IP" ]]; then
+            echo "server.$i=$ip::2888:3888" | sudo tee -a $config_file
+            ((i++))
+        fi
+    done
+    restart_service zookeeper
+}
+
+
+function contrail_config_redis()
+{
+    sudo sed -i "s/bind 127.0.0.1/bind $SERVICE_LISTEN_ADDRESS/g" /etc/redis/redis.conf
+    restart_service redis-server
+}
 
 function contrail_config_api()
 {
@@ -270,13 +278,11 @@ function contrail_config_dns()
     local config_file="/etc/contrail/dns/contrail-dns.conf"
     sudo truncate -s 0 $config_file
 
-    local named_log="/var/log/contrail/named.log"
     local rndc_secret=$(openssl rand -base64 32)
 
     iniset -sudo $config_file DEFAULT hostip $CONTROL_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
-    iniset -sudo $config_file DEFAULT named_log_file $named_log
     iniset -sudo $config_file DEFAULT rndc_secret $rndc_secret
     iniset -sudo $config_file DEFAULT rndc_config_file 'contrail-rndc.conf'
 
@@ -292,9 +298,7 @@ function contrail_config_dns()
     sudo sed -i "s|secret.*|secret \"$rndc_secret\";|" /etc/contrail/dns/contrail-rndc.conf
     sudo sed -i "s|secret.*|secret \"$rndc_secret\";|" /etc/contrail/dns/contrail-named.conf
 
-    #FIXME log file must be created with correct permissions for named to start
-    sudo chown mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
-
+    sudo mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
 }
 
 function contrail_config_vrouter_agent()
@@ -335,20 +339,13 @@ function contrail_config_irond_users()
 {
     local config_file="/etc/ifmap-server/basicauthusers.properties"
 
-    #FIXME Required?
-    #echo "$CONTROL_IP=$CFGM_IP--0000000001-1" | sudo tee "/etc/ifmap-server/publisher.properties"
-
-    #sed -i '/^# Contrail/Q' $config_file
-    #echo '# Contrail users' | sudo tee $config_file
-
     echo 'api-server:api-server' | sudo tee $config_file
     echo 'schema-transformer:schema-transformer' | sudo tee -a $config_file
     echo 'svc_monitor:svc_monitor' | sudo tee -a $config_file
 
-    for ip in ${CONTROL_IP_LIST[@]};
-    do
-        sudo echo "$ip:$ip" | sudo tee -a $config_file
-        sudo echo "$ip.dns:$ip.dns" | sudo tee -a $config_file
+    for ip in $(echo $CONTROL_IP_LIST | awk -F "," '{$1=$1; print}'); do
+        echo "$ip:$ip" | sudo tee -a $config_file
+        echo "$ip.dns:$ip.dns" | sudo tee -a $config_file
     done
     sudo service ifmap-server restart
 }

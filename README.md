@@ -30,7 +30,6 @@ It may be safer to use a stable version of devstack & openstack
 Copy sample local.conf into devstack directory, and enable this plugin
 
     cp samples/local.conf .
-
     echo "enable_plugin contrail https://github.com/zioc/contrail-devstack-plugin.git" >> local.conf
 
 That's all, you can now launch devstack

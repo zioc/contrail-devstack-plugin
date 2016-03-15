@@ -87,10 +87,11 @@ function insert_vrouter() {
     sudo ip link set vhost0 up
     sudo ip addr add $VHOST_INTERFACE_CIDR dev vhost0
     sudo ip addr flush dev $VHOST_INTERFACE_NAME
-    #TODO: kill dhclient if running on physical interface
-    if ! ip route | grep -q default; then
-        echo "Re-addd default route"
-        sudo ip route add default via $DEFAULT_GW
+    sudo ip route add default via $DEFAULT_GW
+
+    # Kill dhclient if running on physical interface to prevent it from reconfiguring the interface at lease renewal
+    if [[ -e /var/run/dhclient.$VHOST_INTERFACE_NAME.pid ]]; then
+        sudo kill $(cat /var/run/dhclient.$VHOST_INTERFACE_NAME.pid) || /bin/true
     fi
 }
 
@@ -102,10 +103,7 @@ function remove_vrouter() {
 
     sudo ip addr add $VHOST_INTERFACE_CIDR dev $VHOST_INTERFACE_NAME
     sudo ip addr flush dev vhost0
-    if ! ip route | grep -q default; then
-        echo "Re-addd default route"
-        sudo ip route add default via $DEFAULT_GW
-    fi
+    sudo ip route add default via $DEFAULT_GW
 
     sudo vif --list | awk '$1~/^vif/ {print $1}' |  sed 's|.*/||' | xargs -I % sudo vif --delete %
     #NOTE: as it is executed in stack.sh, vrouter-agent shoudn't be running, we should be able to remove vrouter module
@@ -160,16 +158,14 @@ function start_contrail() {
     run_process analytics-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
     run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
     run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
-    #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in cmdline to retrieve bind status
-    run_process named "sudo /usr/bin/contrail-named -f -c /etc/contrail/dns/contrail-named.conf"
+    #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in /proc/[pid]/cmdline to retrieve bind status
+    run_process named "sudo /usr/bin/contrail-named -g -c /etc/contrail/dns/contrail-named.conf"
 
     run_process ui-jobs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs jobServerStart.js"
     run_process ui-webs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs webServerStart.js"
 
     SCREEN_NAME="$STACK_SCREEN_NAME"
 }
-
-echo "### contrail devstack plugin mode:$1, phase:$2 ###"
 
 if [[ "$1" == "stack" && "$2" == "source" ]]; then
     # Called after projects lib are sourced, before packages installation
@@ -193,7 +189,7 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
         sudo -E add-apt-repository -y ppa:opencontrail
     fi
 
-    #FIXME: workaround ifmap-server package issue (doesn't creates /etc/contrail)
+    #FIXME: workaround ifmap-server package issue (doesn't creates /etc/contrail but needs it to start)
     sudo mkdir -p /etc/contrail
 
 elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
@@ -252,8 +248,8 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
 
     echo_summary "Configuring contrail"
 
-    #sudo chmod a+w /etc/contrail
     source $CONTRAIL_PLUGIN_DIR/lib/contrail_config
+    # Use bash completion features to conveniently run all config functions
     for config_func in $(compgen -A function contrail_config_); do
         eval $config_func
     done
@@ -282,15 +278,19 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
 
     if is_service_enabled vrouter ; then
         /usr/share/contrail/provision_vrouter.py $provision_api_args \
-            --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $VHOST_INTERFACE_IP
+            --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $VHOST_INTERFACE_IP \
+            || /bin/true    # Failure is not critical
     fi
     if is_service_enabled control ; then
         /usr/share/contrail/provision_control.py $provision_api_args \
-            --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $CONTROL_IP --router_asn 64512
-
+            --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 \
+            || /bin/true    # Failure is not critical
+    fi
+    if is_service_enabled api-srv ; then
         /usr/share/contrail/provision_linklocal.py $provision_api_args \
             --oper add --linklocal_service_name metadata --linklocal_service_ip 169.254.169.254 \
-            --linklocal_service_port 80 --ipfabric_service_ip $OPENSTACK_IP --ipfabric_service_port 8775
+            --linklocal_service_port 80 --ipfabric_service_ip $OPENSTACK_IP --ipfabric_service_port 8775 \
+            || /bin/true    # Failure is not critical
     fi
 
 elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
