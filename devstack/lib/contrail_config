@@ -323,7 +323,7 @@ function contrail_config_vrouter_agent()
     iniset -sudo $config_file SERVICE-INSTANCE netns_command $(which opencontrail-vrouter-netns)
     iniset -sudo $config_file SERVICE-INSTANCE docker_command $(which opencontrail-vrouter-docker)
 
-    if [[ "$Q_L3_ENABLED" == "True" ]]; then
+    if [[ "$Q_L3_ENABLED" == "True" ]]; then
         iniset -sudo $config_file GATEWAY-0 interface vgw
         iniset -sudo $config_file GATEWAY-0 ip_blocks $FLOATING_RANGE
         iniset -sudo $config_file GATEWAY-0 routing_instance "default-domain:admin:$PUBLIC_NETWORK_NAME:$PUBLIC_NETWORK_NAME"
