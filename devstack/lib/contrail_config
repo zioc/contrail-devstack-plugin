@@ -59,7 +59,9 @@ function contrail_config_cassandra()
 
     sudo sed -i "s/seeds:.*/seeds: $CASSANDRA_IP_LIST/" /etc/cassandra/cassandra.yaml
 
-    restart_service cassandra
+    stop_service cassandra || true
+    sudo rm -Rf /var/lib/cassandra/*
+    start_service cassandra
 }
 
 function contrail_config_zookeeper()
@@ -73,7 +75,10 @@ function contrail_config_zookeeper()
             ((i++))
         fi
     done
-    restart_service zookeeper
+
+    stop_service zookeeper || true
+    sudo rm -Rf /var/lib/zookeper/*
+    start_service zookeeper
 }
 
 

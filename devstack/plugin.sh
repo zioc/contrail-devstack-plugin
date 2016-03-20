@@ -146,7 +146,7 @@ function start_contrail() {
     run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
     run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf"
     # Wait for api
-    if is_service_enabled api-srv && ! wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 30 -q -O /dev/null http://$APISERVER_IP:8082; then
+    if is_service_enabled api-srv && ! wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082; then
         echo "Contrail api failed to start"
         exit 1
     fi
@@ -201,9 +201,6 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         install_cassandra
         install_cassandra_cpp_driver
 
-        # Zookeeper doesn't start automatically when just installed
-        service zookeeper status | grep -q stop && sudo service zookeeper start
-
         # Packages should have been installed by devstack
         #install_package $(_parse_package_files $CONTRAIL_DEST)
 
@@ -253,11 +250,6 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
     for config_func in $(compgen -A function contrail_config_); do
         eval $config_func
     done
-
-    # Clean contrail databases (it may be suboptimal to do that after config,
-    # which may restart databases, it could take a while to come back up, but
-    # this is required for first run, as databases needs to be configured first)
-    python $CONTRAIL_PLUGIN_DIR/lib/reset_dbs.py --cassandra_ip=$CASSANDRA_IP --zookeeper_ip=$ZOOKEEPER_IP_LIST
 
     # Force vrouter module re-insertion if asked
     [[ "$RELOAD_VROUTER" == "True" ]] && remove_vrouter
