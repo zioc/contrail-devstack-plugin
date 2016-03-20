@@ -328,6 +328,22 @@ function contrail_config_vrouter_agent()
     iniset -sudo $config_file DEFAULT log_local 1
 }
 
+function contrail_config_heat()
+{
+    if is_service_enabled heat; then
+        setup_package $CONTRAIL_DEST/openstack/contrail-heat -e
+
+        iniset $HEAT_CONF DEFAULT plugin_dirs "$CONTRAIL_DEST/openstack/contrail-heat/contrail_heat/resources"
+        iniset $HEAT_CONF clients_contrail user $CONTRAIL_ADMIN_USER
+        iniset $HEAT_CONF clients_contrail password $CONTRAIL_ADMIN_PASSWORD
+        iniset $HEAT_CONF clients_contrail tenant $CONTRAIL_ADMIN_PROJECT
+        iniset $HEAT_CONF clients_contrail api_server $APISERVER_IP
+        iniset $HEAT_CONF clients_contrail api_port 8082
+        iniset $HEAT_CONF clients_contrail api_base_url "/"
+        iniset $HEAT_CONF clients_contrail auth_host_ip $OPENSTACK_IP
+    fi
+}
+
 function contrail_config_irond_users()
 {
     local config_file="/etc/ifmap-server/basicauthusers.properties"
