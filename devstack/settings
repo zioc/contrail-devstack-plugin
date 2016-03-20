@@ -45,12 +45,12 @@ fi
 
 BUILD_OPT=${BUILD_OPT:-production}
 
-# vrouter kernel module options
+# vrouter kernel module options
 #------------------------------
 
 # force the reload of vrouter kernel module in stack.sh
 RELOAD_VROUTER=$(trueorfalse False RELOAD_VROUTER)
-# kernel modules options
+# kernel modules options
 VR_KMOD_OPTS=${VR_KMOD_OPTS:-"vr_flow_entries=4096 vr_oflow_entries=512 vr_bridge_entries=128"}
 
 # Services configuration

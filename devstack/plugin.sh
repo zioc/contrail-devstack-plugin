@@ -91,7 +91,7 @@ function insert_vrouter() {
 
     # Kill dhclient if running on physical interface to prevent it from reconfiguring the interface at lease renewal
     if [[ -e /var/run/dhclient.$VHOST_INTERFACE_NAME.pid ]]; then
-        sudo kill $(cat /var/run/dhclient.$VHOST_INTERFACE_NAME.pid) || /bin/true
+        sudo kill $(cat /var/run/dhclient.$VHOST_INTERFACE_NAME.pid) || /bin/true
     fi
 }
 
@@ -249,7 +249,7 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
     echo_summary "Configuring contrail"
 
     source $CONTRAIL_PLUGIN_DIR/lib/contrail_config
-    # Use bash completion features to conveniently run all config functions
+    # Use bash completion features to conveniently run all config functions
     for config_func in $(compgen -A function contrail_config_); do
         eval $config_func
     done
