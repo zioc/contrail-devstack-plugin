@@ -292,6 +292,11 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
             --linklocal_service_port 80 --ipfabric_service_ip $OPENSTACK_IP --ipfabric_service_port 8775 \
             || /bin/true    # Failure is not critical
     fi
+    if [[ "$Q_L3_ENABLED" == "True" ]]; then
+        sudo /usr/share/contrail/provision_vgw_interface.py --oper create \
+            --interface vgw --subnets $FLOATING_RANGE --routes 0.0.0.0/0 \
+            --vrf "default-domain:admin:$PUBLIC_NETWORK_NAME:$PUBLIC_NETWORK_NAME"
+    fi
 
 elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
     # Called after services provisionning (images, default networks...)
