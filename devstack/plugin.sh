@@ -220,7 +220,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         cd $CONTRAIL_DEST
 
         # Build vrouter-agent if not done earlier
-        if ! is_service_enabled q-svc; then
+        if ! is_service_enabled api-srv disco svc-mon schema control collector analytics-api query-engine dns named; then
             sudo -E scons $SCONS_ARGS controller/src/vnsw
         fi
 

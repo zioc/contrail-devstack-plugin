@@ -8,8 +8,8 @@ CONTRAIL_SVC_LIST="vrouter api-srv disco svc-mon schema control collector analyt
 
 # Check if some specific services have been enbled in local.conf
 if ! is_service_enabled $CONTRAIL_SVC_LIST; then
-    # If not, enable all the services
-    enable_service $CONTRAIL_SVC_LIST
+    # If not, enable all required services to have a functional all-in-one devstack
+    enable_service q-svc $CONTRAIL_SVC_LIST
 fi
 
 # General settings
