@@ -99,6 +99,7 @@ function contrail_config_api()
     iniset -sudo $config_file DEFAULTS ifmap_password 'api-server'
 
     iniset -sudo $config_file DEFAULTS multi_tenancy $MULTI_TENANCY
+    iniset -sudo $config_file DEFAULTS multi_tenancy_with_rbac $MULTI_TENANCY
     iniset -sudo $config_file DEFAULTS auth keystone
 
     iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP

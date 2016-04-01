@@ -145,11 +145,8 @@ function start_contrail() {
 
     run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
     run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf"
-    # Wait for api
-    if is_service_enabled api-srv && ! wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082; then
-        echo "Contrail api failed to start"
-        exit 1
-    fi
+    # Wait for api to be ready, as it creates cassandra CF required for disco to start
+    is_service_enabled api-srv && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
     run_process disco "contrail-discovery --conf_file /etc/contrail/contrail-discovery.conf"
     run_process svc-mon "contrail-svc-monitor --conf_file /etc/contrail/contrail-svc-monitor.conf"
     run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
