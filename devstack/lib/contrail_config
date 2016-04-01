@@ -366,9 +366,11 @@ function contrail_config_irond_users()
 
 function contrail_config_qemu()
 {
+    #FIXME: this should be handled by devstack/lib/nova_plugins/functions-libvirt
+    #but for now, is_neutron_ovs_base_plugin can't be true.
     local config_file="/etc/libvirt/qemu.conf"
 
-    if sudo grep -qve '^cgroup_device_acl' /etc/libvirt/qemu.conf; then
+    if ! sudo grep -qe '^cgroup_device_acl' /etc/libvirt/qemu.conf; then
         sudo bash -c "cat >> $config_file" <<- "EOF"
 cgroup_device_acl = [
     "/dev/null", "/dev/full", "/dev/zero",
@@ -377,6 +379,12 @@ cgroup_device_acl = [
     "/dev/rtc", "/dev/hpet","/dev/net/tun",
 ]
 EOF
+        if [[ ! -f /etc/init.d/libvirtd ]]; then
+            LIBVIRT_DAEMON=libvirt-bin
+        else
+            LIBVIRT_DAEMON=libvirtd
+        fi
+        restart_service $LIBVIRT_DAEMON
     fi
 
 }
