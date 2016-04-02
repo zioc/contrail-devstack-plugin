@@ -90,11 +90,6 @@ function insert_vrouter() {
     sudo ip addr add $VHOST_INTERFACE_CIDR dev vhost0
     sudo ip addr flush dev $VHOST_INTERFACE_NAME
     sudo ip route add default via $DEFAULT_GW
-
-    # Kill dhclient if running on physical interface to prevent it from reconfiguring the interface at lease renewal
-    if [[ -e /var/run/dhclient.$VHOST_INTERFACE_NAME.pid ]]; then
-        sudo kill $(cat /var/run/dhclient.$VHOST_INTERFACE_NAME.pid) || /bin/true
-    fi
 }
 
 function remove_vrouter() {
@@ -103,7 +98,7 @@ function remove_vrouter() {
 
     echo_summary "Removing vrouter kernel module"
 
-    sudo ip addr add $VHOST_INTERFACE_CIDR dev $VHOST_INTERFACE_NAME
+    sudo ip addr add $VHOST_INTERFACE_CIDR dev $VHOST_INTERFACE_NAME || true #dhclient may have already done that
     sudo ip addr flush dev vhost0
     sudo ip route add default via $DEFAULT_GW
 
