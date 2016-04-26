@@ -8,7 +8,9 @@ function fetch_contrail() {
     fi
 
     if [[ ! -d "$CONTRAIL_DEST/.repo"  || "$RECLONE" = "True" ]]; then
-        mkdir -p "$CONTRAIL_DEST"
+        sudo mkdir -p $CONTRAIL_DEST
+        safe_chown -R $STACK_USER $CONTRAIL_DEST
+        safe_chmod 0755 $CONTRAIL_DEST
         cd "$CONTRAIL_DEST"
         repo init -u "$CONTRAIL_REPO" -b "$CONTRAIL_BRANCH"
         sed -i 's/\.\./\./' .repo/manifest.xml
@@ -305,4 +307,3 @@ elif [[ "$1" == "clean" ]]; then
     #no-op
     :
 fi
-
