@@ -224,7 +224,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         fi
 
         # Build vrouter kernel module
-        sudo -E scons $SCONS_ARGS vrouter
+        sudo -E scons $SCONS_ARGS ./vrouter
         cd $TOP_DIR
     fi
     if is_service_enabled ui-webs ui-jobs; then
