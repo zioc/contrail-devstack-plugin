@@ -10,8 +10,7 @@ kafka              # required by analytics-api
 contrail-api-cli   # as it's convenient
 
 #find $CONTRAIL_DEST -name requirements.txt -exec cat {} \; \
-# awk '$1 !~ /^#|^glance|^heat|^keystone|^neutron|^nova/ {print $1}' | \
-# sort -u | xargs -I % sudo -HE pip install %
+# awk '$1 !~ /^#|^glance|^heat|^keystone|^neutron|^nova/ {print $1}' |  sort -u
 
 # provides
 
@@ -20,10 +19,7 @@ bottle==0.12.8
 cfgm_common
 ConfigParser
 consistent-hash
-contrail-vrouter-api
 discoveryclient
-docker-py
-eventlet
 gevent==1.1a2
 geventhttpclient==1.0a
 kazoo
@@ -40,7 +36,6 @@ requests
 sandesh
 sandesh-common
 stevedore
-thrift
 vnc_api
 xmltodict
 

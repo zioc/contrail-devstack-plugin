@@ -225,6 +225,10 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
         # Build vrouter kernel module
         sudo -E scons $SCONS_ARGS ./vrouter
+
+        pip_install -r controller/src/vnsw/opencontrail-vrouter-netns/requirements.txt
+        pip_install -r controller/src/vnsw/contrail-vrouter-api/requirements.txt
+
         cd $TOP_DIR
     fi
     if is_service_enabled ui-webs ui-jobs; then
