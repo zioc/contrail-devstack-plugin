@@ -20,7 +20,7 @@ fi
 
 function _fill_keystone_options()
 {
-    iniset -sudo $1 KEYSTONE auth_host $OPENSTACK_IP
+    iniset -sudo $1 KEYSTONE auth_host $KEYSTONE_AUTH_HOST
     iniset -sudo $1 KEYSTONE admin_user $CONTRAIL_ADMIN_USER
     iniset -sudo $1 KEYSTONE admin_password $CONTRAIL_ADMIN_PASSWORD
     iniset -sudo $1 KEYSTONE admin_tenant_name $CONTRAIL_ADMIN_PROJECT
@@ -201,7 +201,7 @@ function contrail_config_api_lib()
 
     iniset -sudo $config_file auth AUTHN_TYPE  'keystone'
     iniset -sudo $config_file auth AUTHN_PORT  5000
-    iniset -sudo $config_file auth AUTHN_SERVER $OPENSTACK_IP
+    iniset -sudo $config_file auth AUTHN_SERVER $KEYSTONE_AUTH_HOST
 }
 
 function contrail_config_control()
@@ -345,7 +345,7 @@ function contrail_config_heat()
         iniset $HEAT_CONF clients_contrail api_server $APISERVER_IP
         iniset $HEAT_CONF clients_contrail api_port 8082
         iniset $HEAT_CONF clients_contrail api_base_url "/"
-        iniset $HEAT_CONF clients_contrail auth_host_ip $OPENSTACK_IP
+        iniset $HEAT_CONF clients_contrail auth_host_ip $KEYSTONE_AUTH_HOST
     fi
 }
 
@@ -389,4 +389,3 @@ EOF
     fi
 
 }
-
