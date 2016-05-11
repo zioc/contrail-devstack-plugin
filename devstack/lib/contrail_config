@@ -338,7 +338,9 @@ function contrail_config_heat()
     if is_service_enabled heat; then
         setup_package $CONTRAIL_DEST/openstack/contrail-heat -e
 
-        iniset $HEAT_CONF DEFAULT plugin_dirs "$CONTRAIL_DEST/build/production/api-lib/vnc_api/gen/heat/resources"
+        iniset $HEAT_CONF DEFAULT plugin_dirs \
+            "$CONTRAIL_DEST/build/$SCONS_TARGET/api-lib/vnc_api/gen/heat/resources, \
+             $CONTRAIL_DEST/openstack/contrail-heat/contrail_heat/resources"
         iniset $HEAT_CONF clients_contrail user $CONTRAIL_ADMIN_USER
         iniset $HEAT_CONF clients_contrail password $CONTRAIL_ADMIN_PASSWORD
         iniset $HEAT_CONF clients_contrail tenant $CONTRAIL_ADMIN_PROJECT
