@@ -18,7 +18,7 @@ function neutron_plugin_configure_service() {
     iniset /$Q_PLUGIN_CONF_FILE CONTRAIL api_server_ip $APISERVER_IP
 
     local PY_PLUGIN_PATH=$(python -c "import neutron_plugin_contrail; print neutron_plugin_contrail.__path__[0]")
-    iniset $NEUTRON_CONF quotas quota_driver neutron.quota.ConfDriver
+    iniset $NEUTRON_CONF quotas quota_driver neutron_plugin_contrail.plugins.opencontrail.quota.driver.QuotaDriver
     iniset $NEUTRON_CONF DEFAULT api_extensions_path extensions:$PY_PLUGIN_PATH/extensions
 }
 
@@ -49,4 +49,3 @@ function neutron_plugin_create_nova_conf {
     fi
 
 }
-
