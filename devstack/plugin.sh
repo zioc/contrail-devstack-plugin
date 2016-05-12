@@ -26,7 +26,7 @@ function fetch_contrail() {
 function install_cassandra() {
     if ! which cassandra > /dev/null 2>&1 ; then
         echo "Installing cassanadra"
-        echo "deb http://www.apache.org/dist/cassandra/debian 20x main" | \
+        echo "deb http://www.apache.org/dist/cassandra/debian 21x main" | \
         sudo tee /etc/apt/sources.list.d/cassandra.list
         # Use curl instead of gpg as it deals better with proxies
         curl -sL --retry 5 "http://pgp.mit.edu/pks/lookup?op=get&search=0x749D6EEC0353B12C" | sudo apt-key add -
