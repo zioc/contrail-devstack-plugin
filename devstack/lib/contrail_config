@@ -12,9 +12,6 @@ CASSANDRA_CQL_IP_PORT_LIST=$(echo $CASSANDRA_IP_LIST | \
 ZOOKEEPER_IP_PORT_LIST=$(echo $ZOOKEEPER_IP_LIST | \
     awk -F "," '{for (i=1;i<=NF;i++) $i=$i":2181"; print}')
 
-COLLECTOR_IP_PORT_LIST=$(echo $COLLECTOR_IP_LIST | \
-    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":8086"; print}')
-
 # Conditionnaly set ifmap port
 IFMAP_PORT=8443
 if [[ $USE_SSL == "True" ]]; then
@@ -260,8 +257,11 @@ function contrail_config_analytics_api()
     #REVISIT: analytics api currently fails with default value (15)
     iniset -sudo $config_file DEFAULT partitions 0
 
-    iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
-    iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    else
+        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
+    fi
     iniset -sudo $config_file DISCOVERY disc_server_ip $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY disc_server_port 5998
 
@@ -278,7 +278,6 @@ function contrail_config_query()
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
     iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
-    iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
 
