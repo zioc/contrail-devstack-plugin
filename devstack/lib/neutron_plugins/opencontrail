@@ -17,6 +17,12 @@ function neutron_plugin_configure_service() {
     iniset /$Q_PLUGIN_CONF_FILE CONTRAIL api_server_port $APISERVER_PORT
     iniset /$Q_PLUGIN_CONF_FILE CONTRAIL api_server_ip $APISERVER_IP
 
+    iniset $NEUTRON_CONF keystone_authtoken admin_user $CONTRAIL_ADMIN_USER
+    iniset $NEUTRON_CONF keystone_authtoken admin_password $CONTRAIL_ADMIN_PASSWORD
+    iniset $NEUTRON_CONF keystone_authtoken admin_tenant_name $CONTRAIL_ADMIN_PROJECT
+    iniset $NEUTRON_CONF keystone_authtoken auth_protocol $KEYSTONE_AUTH_PROTOCOL
+    iniset $NEUTRON_CONF keystone_authtoken auth_host $KEYSTONE_AUTH_HOST
+
     local PY_PLUGIN_PATH=$(python -c "import neutron_plugin_contrail; print neutron_plugin_contrail.__path__[0]")
     iniset $NEUTRON_CONF quotas quota_driver neutron_plugin_contrail.plugins.opencontrail.quota.driver.QuotaDriver
     iniset $NEUTRON_CONF DEFAULT api_extensions_path extensions:$PY_PLUGIN_PATH/extensions
