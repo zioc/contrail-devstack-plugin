@@ -239,6 +239,11 @@ function contrail_config_collector()
         iniset -sudo $config_file DEFAULT zookeeper_server_list $ZOOKEEPER_IP_PORT_LIST
     fi
 
+    iniset -sudo $config_file DEFAULT analytics_data_ttl 4
+    iniset -sudo $config_file DEFAULT analytics_flow_ttl 4
+    iniset -sudo $config_file DEFAULT analytics_statistics_ttl 4
+    iniset -sudo $config_file DEFAULT analytics_config_audit_ttl 4
+
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
 
