@@ -53,6 +53,9 @@ function contrail_config_cassandra()
 {
     sudo sed -i "s/^\#MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"$CASS_MAX_HEAP_SIZE\"/" /etc/cassandra/cassandra-env.sh
     sudo sed -i "s/^\#HEAP_NEWSIZE=.*/HEAP_NEWSIZE=\"$CASS_HEAP_NEWSIZE\"/" /etc/cassandra/cassandra-env.sh
+    #Fix broken java version check
+    sudo sed -i 's|\\< "25"|-lt 25|' /etc/cassandra/cassandra-env.sh
+
     #NOTE: it isn't safe to use SERVICE_LISTEN_ADDRESS here, as cassandra can't bind 0.0.0.0
     sudo sed -i "s/listen_address:.*/listen_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
     sudo sed -i "s/rpc_address:.*/rpc_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
