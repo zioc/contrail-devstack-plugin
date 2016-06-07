@@ -279,7 +279,7 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
     if is_service_enabled api-srv ; then
         /usr/share/contrail/provision_linklocal.py $provision_api_args \
             --oper add --linklocal_service_name metadata --linklocal_service_ip 169.254.169.254 \
-            --linklocal_service_port 80 --ipfabric_service_ip $NOVA_SERVICE_LISTEN_ADDRESS --ipfabric_service_port 8775 \
+            --linklocal_service_port 80 --ipfabric_service_ip $NOVA_SERVICE_HOST --ipfabric_service_port 8775 \
             || /bin/true    # Failure is not critical
     fi
     if [[ "$Q_L3_ENABLED" == "True" ]]; then
