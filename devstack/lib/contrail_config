@@ -280,7 +280,13 @@ function contrail_config_query()
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
-    iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+    else
+        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT zookeeper_server_list $ZOOKEEPER_IP_PORT_LIST
+    fi
+
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
 
