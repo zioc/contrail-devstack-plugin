@@ -13,9 +13,10 @@ function neutron_plugin_configure_common() {
 
 
 function neutron_plugin_configure_service() {
-    iniset /$Q_PLUGIN_CONF_FILE CONTRAIL multi_tenancy $MULTI_TENANCY
-    iniset /$Q_PLUGIN_CONF_FILE CONTRAIL api_server_port $APISERVER_PORT
-    iniset /$Q_PLUGIN_CONF_FILE CONTRAIL api_server_ip $APISERVER_IP
+    iniset /$Q_PLUGIN_CONF_FILE APISERVER multi_tenancy $MULTI_TENANCY
+    iniset /$Q_PLUGIN_CONF_FILE APISERVER api_server_port $APISERVER_PORT
+    iniset /$Q_PLUGIN_CONF_FILE APISERVER api_server_ip $APISERVER_IP
+    iniset /$Q_PLUGIN_CONF_FILE APISERVER apply_subnet_host_routes True
 
     iniset $NEUTRON_CONF keystone_authtoken admin_user $CONTRAIL_ADMIN_USER
     iniset $NEUTRON_CONF keystone_authtoken admin_password $CONTRAIL_ADMIN_PASSWORD
