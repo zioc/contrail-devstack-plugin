@@ -286,6 +286,9 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         sudo /usr/share/contrail/provision_vgw_interface.py --oper create \
             --interface vgw --subnets $FLOATING_RANGE --routes 0.0.0.0/0 \
             --vrf "default-domain:admin:$PUBLIC_NETWORK_NAME:$PUBLIC_NETWORK_NAME"
+        if [[ "$VGW_MASQUERADE" == "True" ]] && ! sudo iptables -t nat -C POSTROUTING -s $FLOATING_RANGE -j MASQUERADE > /dev/null 2>&1; then
+            sudo iptables -t nat -A POSTROUTING -s $FLOATING_RANGE -j MASQUERADE
+        fi
     fi
 
 elif [[ "$1" == "stack" && "$2" == "extra" ]]; then

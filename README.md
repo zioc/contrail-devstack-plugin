@@ -65,3 +65,8 @@ Interface configuration and default gateway should be retrieved by plugin, if yo
     VHOST_INTERFACE_CIDR=10.0.0.1/24
     VHOST_INTERFACE_IP=10.0.0.1
     DEFAULT_GW=10.0.0.254
+
+Devstack creates a couple of network by default (Public and Private), for convenience,
+Public network prefix (defined by FLOATING_RANGE parameter) is routed through contrail
+virtual gateway interface. This prefix is masqueraded on the host in order to allow seamless
+external connectivity.
