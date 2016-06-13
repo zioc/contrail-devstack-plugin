@@ -51,3 +51,17 @@ they may be overwritten in your local.conf, for example:
 
     #Provide a custom list of enabled services (by default dns and webui would be enabled in addition to the following list)
     enable_service vrouter api-srv disco svc-mon schema control collector analytics-api query-engine
+
+Plumbing
+========
+
+By default, plugin will attempt to plug vrouter on default interface (the one used to reach the default gateway)
+If you intent to use another interface, or if plugin fails to retrive it, you can specify it in local.conf:
+
+    VHOST_INTERFACE_NAME=eth1
+
+Interface configuration and default gateway should be retrieved by plugin, if you want to overload it, use following parameters:
+
+    VHOST_INTERFACE_CIDR=10.0.0.1/24
+    VHOST_INTERFACE_IP=10.0.0.1
+    DEFAULT_GW=10.0.0.254

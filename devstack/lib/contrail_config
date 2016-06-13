@@ -338,8 +338,10 @@ function contrail_config_vrouter_agent()
 
     iniset -sudo $config_file VIRTUAL-HOST-INTERFACE ip $VHOST_INTERFACE_CIDR
     iniset -sudo $config_file VIRTUAL-HOST-INTERFACE name vhost0
-    iniset -sudo $config_file VIRTUAL-HOST-INTERFACE gateway $DEFAULT_GW
     iniset -sudo $config_file VIRTUAL-HOST-INTERFACE physical_interface $VHOST_INTERFACE_NAME
+    if address_in_net $DEFAULT_GW $VHOST_INTERFACE_CIDR; then
+        iniset -sudo $config_file VIRTUAL-HOST-INTERFACE gateway $DEFAULT_GW
+    fi
 
     iniset -sudo $config_file SERVICE-INSTANCE netns_command $(which opencontrail-vrouter-netns)
     iniset -sudo $config_file SERVICE-INSTANCE docker_command $(which opencontrail-vrouter-docker)

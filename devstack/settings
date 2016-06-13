@@ -70,21 +70,22 @@ CONTRAIL_LISTEN_ADDRESS=${CONTRAIL_LISTEN_ADDRESS:-$SERVICE_LISTEN_ADDRESS}
 CONFIG_IP=${CONFIG_IP:-$HOST_IP}
 
 # Determine physical interface on which vrouter will plug:
-#  -first, use VROUTER_ if provided in local.conf
-#  -otherwise, use the default interface (used to reach the default gateway)
+#  -first, use VHOST_* parameters if provided in local.conf
+#  -otherwise, use the default interface (the one used to reach the default gateway)
 #  -if vhost0 is already inserted, use vif to find the physical interface
 
-DEFAULT_IF=$(ip -4 route | awk '$1=="default" {print $5}')
-
-VHOST_INTERFACE_CIDR=${VHOST_INTERFACE_CIDR:-$(ip -o -4 addr show $DEFAULT_IF | awk '{print $4}')}
-VHOST_INTERFACE_IP=${VROUTER_IP:-$(echo $VHOST_INTERFACE_CIDR | sed 's|/.*||')}
-if [[ $DEFAULT_IF == "vhost0" ]]; then
-    # We're running on vhost0, it should be safe to use vif as it should have been build && used alonside with kernel module
+VHOST_INTERFACE_NAME=${VHOST_INTERFACE_NAME:-$(ip -4 route | awk '$1=="default" && NR==1 {print $5}')}
+if [[ $VHOST_INTERFACE_NAME == "vhost0" ]]; then
+    # vrouter has already been inserted on default interface, use vif to retrive the undelying interface
     VHOST_INTERFACE_NAME=${VHOST_INTERFACE_NAME:-$(sudo vif --list | awk '{if(/Type:Physical/){print iface}};{iface=$3}')}
-else
-    VHOST_INTERFACE_NAME=${VHOST_INTERFACE_NAME:-$DEFAULT_IF}
 fi
-DEFAULT_GW=$(ip -4 route | awk '$1=="default" {print $3}')
+
+VHOST_INTERFACE_CIDR=${VHOST_INTERFACE_CIDR:-$(ip -o -4 addr show $VHOST_INTERFACE_NAME | awk 'NR==1 {print $4}')}
+# If vrouter is already inserted, we have to look at vhost0 to retrieve IP configuration:
+VHOST_INTERFACE_CIDR=${VHOST_INTERFACE_CIDR:-$(ip -o -4 addr show vhost0 | awk 'NR==1 {print $4}')}
+
+VHOST_INTERFACE_IP=${VROUTER_IP:-$(echo $VHOST_INTERFACE_CIDR | sed 's|/.*||')}
+DEFAULT_GW=$(ip -4 route | awk '$1=="default" && NR==1 {print $3}')
 
 APISERVER_IP=${APISERVER_IP:-$CONFIG_IP}
 COLLECTOR_IP=${COLLECTOR_IP:-$CONFIG_IP}

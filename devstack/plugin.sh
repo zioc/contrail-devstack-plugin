@@ -89,7 +89,7 @@ function insert_vrouter() {
     sudo ip link set vhost0 up
     sudo ip addr add $VHOST_INTERFACE_CIDR dev vhost0
     sudo ip addr flush dev $VHOST_INTERFACE_NAME
-    sudo ip route add default via $DEFAULT_GW
+    sudo ip route add default via $DEFAULT_GW || true
 }
 
 function remove_vrouter() {
@@ -100,7 +100,7 @@ function remove_vrouter() {
 
     sudo ip addr add $VHOST_INTERFACE_CIDR dev $VHOST_INTERFACE_NAME || true #dhclient may have already done that
     sudo ip addr flush dev vhost0
-    sudo ip route add default via $DEFAULT_GW
+    sudo ip route add default via $DEFAULT_GW || true
 
     sudo vif --list | awk '$1~/^vif/ {print $1}' |  sed 's|.*/||' | xargs -I % sudo vif --delete %
     #NOTE: as it is executed in stack.sh, vrouter-agent shoudn't be running, we should be able to remove vrouter module
