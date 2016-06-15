@@ -4,7 +4,7 @@
 # Make sure nova-network and neutron agents aren't enabled
 disable_service n-net q-agt q-l3 q-dhcp q-meta q-dhcp q-lbaas
 
-CONTRAIL_SVC_LIST="vrouter api-srv disco svc-mon schema control collector analytics-api query-engine dns named ui-jobs ui-webs"
+CONTRAIL_SVC_LIST="vrouter api-srv disco svc-mon schema control collector analytic-api query-engine dns named ui-jobs ui-webs"
 
 # Check if some specific services have been enbled in local.conf
 if ! is_service_enabled $CONTRAIL_SVC_LIST; then

@@ -149,7 +149,7 @@ function start_contrail() {
     run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
     run_process control "sudo contrail-control --conf_file /etc/contrail/contrail-control.conf"
     run_process collector "contrail-collector --conf_file /etc/contrail/contrail-collector.conf"
-    run_process analytics-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
+    run_process analytic-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
     run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
     run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
     #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in /proc/[pid]/cmdline to retrieve bind status
@@ -191,7 +191,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
     fetch_contrail
 
-    if is_service_enabled api-srv disco svc-mon schema control collector analytics-api query-engine dns named; then
+    if is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
         install_cassandra
         install_cassandra_cpp_driver
 
@@ -214,7 +214,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         cd $CONTRAIL_DEST
 
         # Build vrouter-agent if not done earlier
-        if ! is_service_enabled api-srv disco svc-mon schema control collector analytics-api query-engine dns named; then
+        if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
             sudo -E scons $SCONS_ARGS controller/src/vnsw
         fi
 
