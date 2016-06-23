@@ -16,6 +16,15 @@ function fetch_contrail() {
         sed -i 's/\.\./\./' .repo/manifest.xml
         repo sync
         cd "$TOP_DIR"
+
+        # Apply extra patches if needed
+        if [[ -n "$CONTRAIL_PATCHES" ]]; then
+            if [[ -f "$CONTRAIL_PATCHES" ]]; then
+                source $CONTRAIL_PATCHES
+            else
+                eval $CONTRAIL_PATCHES
+            fi
+        fi
     fi
 
     if [[ ! -e "$CONTRAIL_DEST/third_party/FETCH_DONE" || "$RECLONE" = "True" ]]; then
