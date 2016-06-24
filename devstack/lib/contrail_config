@@ -49,6 +49,44 @@ function _fill_certificate_options()
     fi
 }
 
+function _vercmp()
+{
+    local v1=$1
+    local op=$2
+    local v2=$3
+    local result
+
+    # sort the two numbers with sort's "-V" argument.  Based on if v2
+    # swapped places with v1, we can determine ordering.
+    result=$(echo -e "$v1\n$v2" | sort -V | head -1)
+
+    case $op in
+        "==")
+            [ "$v1" = "$v2" ]
+            return
+            ;;
+        ">")
+            [ "$v1" != "$v2" ] && [ "$result" = "$v2" ]
+            return
+            ;;
+        "<")
+            [ "$v1" != "$v2" ] && [ "$result" = "$v1" ]
+            return
+            ;;
+        ">=")
+            [ "$result" = "$v2" ]
+            return
+            ;;
+        "<=")
+            [ "$result" = "$v1" ]
+            return
+            ;;
+        *)
+            die $LINENO "unrecognised op: $op"
+            ;;
+    esac
+}
+
 function contrail_config_cassandra()
 {
     sudo sed -i "s/^\#MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"$CASS_MAX_HEAP_SIZE\"/" /etc/cassandra/cassandra-env.sh
@@ -235,7 +273,7 @@ function contrail_config_collector()
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
-    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+    if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
@@ -260,7 +298,7 @@ function contrail_config_analytics_api()
     #REVISIT: analytics api currently fails with default value (15)
     iniset -sudo $config_file DEFAULT partitions 0
 
-    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+    if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
@@ -280,7 +318,7 @@ function contrail_config_query()
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
-    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+    if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
