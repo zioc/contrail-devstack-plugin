@@ -8,3 +8,4 @@ Q_L3_ROUTER_PER_TENANT=${Q_L3_ROUTER_PER_TENANT:-True}
 # devstack calls has_neutron_plugin_security_group before settings are sourced
 CONTRAIL_PLUGIN_DIR="$dir/devstack"
 source $CONTRAIL_PLUGIN_DIR/lib/neutron_plugins/opencontrail
+source $CONTRAIL_PLUGIN_DIR/lib/functions

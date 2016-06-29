@@ -235,7 +235,7 @@ function contrail_config_collector()
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
-    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+    if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
@@ -260,7 +260,7 @@ function contrail_config_analytics_api()
     #REVISIT: analytics api currently fails with default value (15)
     iniset -sudo $config_file DEFAULT partitions 0
 
-    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+    if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
@@ -280,7 +280,7 @@ function contrail_config_query()
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
-    if vercmp $CONTRAIL_BRANCH "<" R3.0; then
+    if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
