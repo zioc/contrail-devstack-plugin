@@ -41,8 +41,8 @@ function install_cassandra_cpp_driver() {
         echo "Installing cassanadra CPP drivers"
         TMP_PKG_DIR=$(mktemp -d)
         cd $TMP_PKG_DIR
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/v2.2.2/cassandra-cpp-driver_2.2.2-1_amd64.deb
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/v2.2.2/cassandra-cpp-driver-dev_2.2.2-1_amd64.deb
+        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.2/cassandra-cpp-driver_2.2.2-1_amd64.deb
+        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.2/cassandra-cpp-driver-dev_2.2.2-1_amd64.deb
         wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/dependencies/libuv/v1.7.5/libuv_1.7.5-1_amd64.deb
 
         sudo dpkg -i *.deb
