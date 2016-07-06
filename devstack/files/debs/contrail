@@ -47,3 +47,5 @@ npm
 zookeeperd
 ifmap-server
 redis-server
+
+google-mock
