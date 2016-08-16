@@ -67,7 +67,7 @@ CASS_HEAP_NEWSIZE=${CASS_HEAP_NEWSIZE:-"100M"}
 CONTRAIL_HOSTNAME=${CONTRAIL_HOSTNAME:-$(hostname -s)}
 
 CONTRAIL_LISTEN_ADDRESS=${CONTRAIL_LISTEN_ADDRESS:-$SERVICE_LISTEN_ADDRESS}
-CONFIG_IP=${CONFIG_IP:-$HOST_IP}
+CONFIG_IP=${CONFIG_IP:-$SERVICE_HOST} # SERVICE_HOST is set to HOST_IP by default
 
 # Determine physical interface on which vrouter will plug:
 #  -first, use VHOST_* parameters if provided in local.conf
