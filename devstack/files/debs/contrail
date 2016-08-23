@@ -43,6 +43,7 @@ libipfix-dev
 
 
 nodejs
+nodejs-legacy
 npm
 zookeeperd
 ifmap-server

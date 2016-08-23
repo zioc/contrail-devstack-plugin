@@ -52,11 +52,9 @@ function install_cassandra_cpp_driver() {
     fi
 }
 
-function configure_webui(){
+function fetch_webui(){
     if [[ ! -e "$CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE" || "$RECLONE" == "True" ]]; then
         cd $CONTRAIL_DEST/contrail-web-core
-        sed -ie "s|discoveryService\.enable.*|discoveryService\.enable = false;|" config/config.global.js
-        sed -ie "s|webController\.path.*|webController\.path = \'$CONTRAIL_DEST/contrail-web-controller\';|" config/config.global.js
         make fetch-pkgs-prod
         make dev-env REPO=webController
         touch $CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE
@@ -228,7 +226,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
     fi
     if is_service_enabled ui-webs ui-jobs; then
         # Fetch 3rd party and install webui
-        configure_webui
+        fetch_webui
     fi
 
 elif [[ "$1" == "stack" && "$2" == "install" ]]; then
