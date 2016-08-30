@@ -25,6 +25,7 @@ function fetch_contrail() {
                 eval $CONTRAIL_PATCHES
             fi
         fi
+        cd "$TOP_DIR"
     fi
 
     if [[ ! -e "$CONTRAIL_DEST/third_party/FETCH_DONE" || "$RECLONE" = "True" ]]; then
