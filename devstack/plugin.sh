@@ -64,6 +64,7 @@ function install_cassandra_cpp_driver() {
 function fetch_webui(){
     if [[ ! -e "$CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE" || "$RECLONE" == "True" ]]; then
         cd $CONTRAIL_DEST/contrail-web-core
+        sed -ie "s|webController\.path.*|webController\.path = \'$CONTRAIL_DEST/contrail-web-controller\';|" config/config.global.js
         make fetch-pkgs-prod
         make dev-env REPO=webController
         touch $CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE

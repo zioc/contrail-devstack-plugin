@@ -415,7 +415,6 @@ function contrail_config_webui()
 
     if is_service_enabled ui-webs ui-jobs; then
         sed -ie "s|discoveryService\.enable.*|discoveryService\.enable = false;|" $config_file
-        sed -ie "s|webController\.path.*|webController\.path = \'$CONTRAIL_DEST/contrail-web-controller\';|" $config_file
         sed -ie "s|regions\.RegionOne.*|regions\.RegionOne = \'http://$KEYSTONE_AUTH_HOST:5000/v2.0\';|" $config_file
         sed -ie "s|identityManager\.ip.*|identityManager\.ip = \'$KEYSTONE_AUTH_HOST\';|" $config_file
     fi
