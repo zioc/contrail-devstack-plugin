@@ -1,18 +1,16 @@
-# This file could have been generated using the following command, however,
-# as there are some missing requirements, and some other doesn't exist:
-
-#FIXME:
-#sandesh_common    # stats-daemon requirements.txt doesn't exists
-jsonpickle         # required by schema, but not in its requirements.txt
-cassandra-driver   # required by analytics-api, but not in its requirements.txt
-kafka              # required by analytics-api
-
-contrail-api-cli   # as it's convenient
+# This list could be generated on the fly using the following commmand:
 
 #find $CONTRAIL_DEST -name requirements.txt -exec cat {} \; \
 # awk '$1 !~ /^#|^glance|^heat|^keystone|^neutron|^nova/ {print $1}' |  sort -u
 
-# provides
+# however, as there are some missing or invalid requirements, as well as some
+# extra additions, the list is kept up to date here instead for now
+
+#sandesh_common    # stats-daemon requirement doesn't exists
+jsonpickle         # required by schema, but not in its requirements.txt
+cassandra-driver   # required by analytics-api, but not in its requirements.txt
+kafka              # required by analytics-api
+contrail-api-cli   # as it's convenient
 
 bitarray>=0.8.0
 bottle==0.12.8
@@ -31,10 +29,12 @@ oslo.config
 prettytable
 psutil>=0.6.0
 pycassa>=1.7.2
+pyyaml
 redis
 requests
 sandesh
 sandesh-common
+sseclient
 stevedore
 vnc_api
 xmltodict
