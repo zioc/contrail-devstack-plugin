@@ -264,6 +264,10 @@ function contrail_config_analytics_api()
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
+
+        if [[ "$MULTI_TENANCY == "False" ]]; then
+            iniset -sudo $config_file DEFAULT aaa_mode no-auth
+        fi
     fi
     iniset -sudo $config_file DISCOVERY disc_server_ip $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY disc_server_port 5998
