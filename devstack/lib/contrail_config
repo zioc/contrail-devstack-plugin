@@ -265,7 +265,7 @@ function contrail_config_analytics_api()
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
 
-        if [[ "$MULTI_TENANCY == "False" ]]; then
+        if [[ "$MULTI_TENANCY" == "False" ]]; then
             iniset -sudo $config_file DEFAULT aaa_mode no-auth
         fi
     fi
