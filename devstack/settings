@@ -77,7 +77,7 @@ CONFIG_IP=${CONFIG_IP:-$SERVICE_HOST} # SERVICE_HOST is set to HOST_IP by defaul
 VHOST_INTERFACE_NAME=${VHOST_INTERFACE_NAME:-$(ip -4 route | awk '$1=="default" && NR==1 {print $5}')}
 if [[ $VHOST_INTERFACE_NAME == "vhost0" ]]; then
     # vrouter has already been inserted on default interface, use vif to retrive the undelying interface
-    VHOST_INTERFACE_NAME=${VHOST_INTERFACE_NAME:-$(sudo vif --list | awk '{if(/Type:Physical/){print iface}};{iface=$3}')}
+    VHOST_INTERFACE_NAME=$(sudo vif --list | awk '{if(/Type:Physical/){print iface}};{iface=$3}')
 fi
 
 VHOST_INTERFACE_CIDR=${VHOST_INTERFACE_CIDR:-$(ip -o -4 addr show $VHOST_INTERFACE_NAME | awk 'NR==1 {print $4}')}
