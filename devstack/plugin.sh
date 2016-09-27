@@ -237,7 +237,9 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         sudo -E scons $SCONS_ARGS ./vrouter
 
         pip_install -r controller/src/vnsw/opencontrail-vrouter-netns/requirements.txt
-        pip_install -r controller/src/vnsw/contrail-vrouter-api/requirements.txt
+        if _vercmp $CONTRAIL_BRANCH "<=" R3.1; then
+            pip_install -r controller/src/vnsw/contrail-vrouter-api/requirements.txt
+        fi
 
         cd $TOP_DIR
     fi
