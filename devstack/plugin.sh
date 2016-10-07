@@ -196,6 +196,16 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
     fi
     if ! apt-cache policy | grep -q opencontrail; then
         sudo -E add-apt-repository -y ppa:opencontrail
+        # pin ppa packages priority to prevent conflicts, only packages not found elsewhere will be installed from this ppa
+        cat <<- EOF | sudo tee /etc/apt/preferences.d/contrail-ppa
+			Package: librdkafka*
+			Pin: release l=OpenContrail
+			Pin-Priority: 990
+
+			Package: *
+			Pin: release l=OpenContrail
+			Pin-Priority: 50
+		EOF
     fi
 
     #FIXME: workaround ifmap-server package issue (doesn't creates /etc/contrail but needs it to start)
