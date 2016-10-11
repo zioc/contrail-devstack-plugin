@@ -39,7 +39,7 @@ function install_cassandra() {
         echo "deb http://www.apache.org/dist/cassandra/debian 21x main" | \
         sudo tee /etc/apt/sources.list.d/cassandra.list
         # Use curl instead of gpg as it deals better with proxies
-        curl -sL --retry 5 "http://pgp.mit.edu/pks/lookup?op=get&search=0x749D6EEC0353B12C" | sudo apt-key add -
+        curl -sL --retry 5 "https://www.apache.org/dist/cassandra/KEYS" | sudo apt-key add -
 
         sudo -E apt-get update
         sudo -E apt-get install -y cassandra
