@@ -24,9 +24,12 @@ Install a fresh environment (with git), and pull devstack sources:
     git clone https://github.com/openstack-dev/devstack.git
     cd devstack
 
-It may be safer to use a stable version of devstack & openstack
+It may be safer to use a stable version of devstack & openstack.
+If you use stable/mitaka you will also need to install pip.
 
     git checkout stable/mitaka
+    apt-get install pip
+    pip install -U pip
 
 > Note: If you're using post-Mitaka Openstack release (newton/master), there
 > is currently a [bug](https://bugs.launchpad.net/opencontrail/+bug/1579806) with keystone client.
