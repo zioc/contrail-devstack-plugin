@@ -28,7 +28,7 @@ It may be safer to use a stable version of devstack & openstack.
 If you use stable/mitaka you will also need to install pip.
 
     git checkout stable/mitaka
-    apt-get install pip
+    apt-get install python-pip
     pip install -U pip
 
 > Note: If you're using post-Mitaka Openstack release (newton/master), there
