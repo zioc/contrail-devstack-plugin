@@ -36,6 +36,7 @@ sandesh
 sandesh-common
 sseclient
 stevedore
+thrift==0.8.0
 vnc_api
 xmltodict
 
