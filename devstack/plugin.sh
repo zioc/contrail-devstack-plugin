@@ -151,14 +151,14 @@ function start_contrail() {
     # Initialize the directory for service status check
     init_service_check
 
-    # Ensure log directory will be writable
-    #chown $STACK_USER:$STACK_USER /var/log/contrail
+    # Ensure log directory will be writable and exists
+    [ ! -d /var/log/contrail ] && sudo mkdir /var/log/contrail
     sudo chmod 777 /var/log/contrail
 
     run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
     run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf"
     # Wait for api to be ready, as it creates cassandra CF required for disco to start
-    is_service_enabled api-srv && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
+    is_service_enabled disco && is_service_enabled api-srv && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
     run_process disco "contrail-discovery --conf_file /etc/contrail/contrail-discovery.conf"
     run_process svc-mon "contrail-svc-monitor --conf_file /etc/contrail/contrail-svc-monitor.conf"
     run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
@@ -223,6 +223,18 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         # Packages should have been installed by devstack
         #install_package $(_parse_package_files $CONTRAIL_DEST)
 
+        # From R4.0, IFMAP server (i.e. irond) dependency was removed
+        if _vercmp $CONTRAIL_BRANCH ">=" R4.0 && is_package_installed ifmap-server; then
+            uninstall_package ifmap-server || true #ifmap-server uninstall does not exit properly
+            # Some directories was install by the ifmap-server package
+            sudo mkdir -p /var/lib/contrail
+            sudo chown -R $STACK_USER. /var/lib/contrail/
+            sudo mkdir -p /var/log/contrail
+            sudo chown -R $STACK_USER:adm /var/log/contrail
+            sudo chmod 0750 /var/log/contrail
+            sudo chown -R $STACK_USER. /etc/contrail
+        fi
+
         echo_summary "Building contrail"
         cd $CONTRAIL_DEST
         sudo -E scons $SCONS_ARGS
@@ -231,7 +243,12 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         # As contrail's python packages requirements aren't installed
         # automatically, we have to manage their installation.
         pip_install -r $CONTRAIL_PLUGIN_DIR/files/requirements.txt
-
+        if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+            pip_install discoveryclient
+        fi
+        # Force to use the version 0.9.3 of the Thrift python library as it is a requirements for Pycassa library.
+        # Recent OpenStack release require at least Thrift 0.10.0.
+        sudo pip install -U thrift==0.9.3
     fi
     if is_service_enabled vrouter; then
         echo_summary "Building contrail vrouter"

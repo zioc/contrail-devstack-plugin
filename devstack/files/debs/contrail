@@ -6,6 +6,7 @@ autoconf
 libtool
 flex
 bison
+cmake
 
 python-sphinx
 python-lxml
