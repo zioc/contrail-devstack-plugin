@@ -215,11 +215,18 @@ function contrail_config_control()
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
     iniset -sudo $config_file DEFAULT hostip $CONTROL_IP
 
-    iniset -sudo $config_file IFMAP user $CONTROL_IP
-    iniset -sudo $config_file IFMAP password $CONTROL_IP
+    if _vercmp $CONTRAIL_BRANCH ">=" R4.0 || $CONTRAIL_BRANCH "==" master; then
+        iniset -sudo $config_file IFMAP rabbitmq_password $RABBIT_PASSWORD
+        iniset -sudo $config_file IFMAP rabbitmq_user $RABBIT_USERID
+        iniset -sudo $config_file IFMAP rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file IFMAP config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
+    else
+        iniset -sudo $config_file IFMAP user $CONTROL_IP
+        iniset -sudo $config_file IFMAP password $CONTROL_IP
 
-    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY port 5998
+        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY port 5998
+    fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
