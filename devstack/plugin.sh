@@ -42,24 +42,37 @@ function install_cassandra() {
         curl -sL --retry 5 "https://www.apache.org/dist/cassandra/KEYS" | sudo apt-key add -
 
         sudo -E apt-get update
-        sudo -E apt-get install -y cassandra
+        # sudo -E apt-get install -y cassandra
+        # On Xenial, force to use jre 8. jre 9 is install by default and conflicts with Cassandra 2.1
+        if _vercmp $os_RELEASE "==" '16.04'; then
+            install_package openjdk-8-jre openjdk-8-jre-headless
+        fi
+        install_package cassandra
     fi
 }
 
 function install_cassandra_cpp_driver() {
-    if ! ldconfig -p |grep -q libcassandra ; then
-        echo "Installing cassanadra CPP drivers"
-        TMP_PKG_DIR=$(mktemp -d)
-        cd $TMP_PKG_DIR
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.2/cassandra-cpp-driver_2.2.2-1_amd64.deb
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.2/cassandra-cpp-driver-dev_2.2.2-1_amd64.deb
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/dependencies/libuv/v1.7.5/libuv_1.7.5-1_amd64.deb
-
-        sudo dpkg -i *.deb
-
-        cd $TOP_DIR
-        rm -Rf $TMP_PKG_DIR
+    if ldconfig -p |grep -q libcassandra ; then
+        # Cassandra CPP lib already installed
+        return
     fi
+
+    echo "Installing cassanadra CPP drivers"
+    TMP_PKG_DIR=$(mktemp -d)
+    cd $TMP_PKG_DIR
+
+    wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver_2.5.0-1_amd64.deb
+    wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver-dev_2.5.0-1_amd64.deb
+    if [[ "$os_RELEASE" == "16.04" ]]; then
+        wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/dependenices/libuv/v1.8.0/libuv_1.8.0-1_amd64.deb
+    else
+        wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/dependencies/libuv/v1.8.0/libuv_1.8.0-1_amd64.deb
+    fi
+
+    sudo dpkg -i *.deb
+
+    cd $TOP_DIR
+    rm -Rf $TMP_PKG_DIR
 }
 
 function fetch_webui(){
@@ -188,6 +201,21 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
         exit 1
     fi
 
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0 && _vercmp $os_RELEASE ">" '14.04'; then
+        # Before R4.0, we need irond server which is installed from opencontrail PPA package 'ifmap-server'
+        # but it depends on upstart init system which replaced by systemd since 15.04 Ubuntu release.
+        #FIXME: convert ifmap-server upstart script to systemd or install upstart (tried and need a reboot?)
+        #FIXME: Authorize to use R3.2 without irond as we can use Contrail embeded IFMAP server since patch
+        # https://review.opencontrail.org/#/q/Ib35b48b20c8d46005bf18e8f9b81064985099ff7,n,z
+        echo "Ubuntu release upper than precice (14.04) does not support "
+        echo "Contrail version under R4.0."
+        exit 1
+    elif _vercmp $os_RELEASE ">" '16.04'; then
+        echo "Ubuntu release $os_CODENAME ($os_RELEASE) is not supported by "
+        echo "that devstack plugin."
+        exit 1
+    fi
+
     # opencontrail ppa repo must be enabled in "source" phase, which happens before
     # package installation. This way, ppa packages in files/debs will be installable.
     if ! which add-apt-repository > /dev/null 2>&1 ; then
@@ -197,19 +225,56 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
     if ! apt-cache policy | grep -q opencontrail; then
         sudo -E add-apt-repository -y ppa:opencontrail
         # pin ppa packages priority to prevent conflicts, only packages not found elsewhere will be installed from this ppa
-        cat <<- EOF | sudo tee /etc/apt/preferences.d/contrail-ppa
-			Package: librdkafka*
-			Pin: release l=OpenContrail
-			Pin-Priority: 990
+        if _vercmp $os_RELEASE "==" '14.04'; then
+            cat <<- EOF | sudo tee /etc/apt/preferences.d/contrail-ppa
+				Package: librdkafka*
+				Pin: release l=OpenContrail
+				Pin-Priority: 990
 
-			Package: *
-			Pin: release l=OpenContrail
-			Pin-Priority: 50
-		EOF
+				Package: *
+				Pin: release l=OpenContrail
+				Pin-Priority: 50
+			EOF
+        elif _vercmp $os_RELEASE "==" '16.04'; then
+            cat <<- EOF | sudo tee /etc/apt/preferences.d/contrail-ppa
+				Package: *
+				Pin: release l=OpenContrail
+				Pin-Priority: 50
+			EOF
+
+            if ! apt-cache policy | grep -q yakkety; then
+				# OpenContrail PPA only propose trusty release
+				sudo sed -i 's/xenial/trusty/' /etc/apt/sources.list.d/opencontrail-ubuntu-ppa-xenial.list
+                # For 16.04, backport rdkafka library from 16.10
+                sudo cp /etc/apt/sources.list /etc/apt/sources.list.d/yakkety.list
+                sudo sed -i 's/xenial/yakkety/' /etc/apt/sources.list.d/yakkety.list
+                cat <<- EOF | sudo tee /etc/apt/preferences.d/yakkety
+					Package: librdkafka*
+					Pin: release n=yakkety
+					Pin-Priority: 990
+
+					Package: *
+					Pin: release n=yakkety
+					Pin-Priority: 50
+				EOF
+            fi
+        fi
     fi
 
     #FIXME: workaround ifmap-server package issue (doesn't creates /etc/contrail but needs it to start)
     sudo mkdir -p /etc/contrail
+
+    # Set packages specific to the release
+    awk -i inplace -v os_RELEASE=$os_RELEASE '{
+        condition=match($0, /[[:space:]]#[[:space:]][0-9]{2}\.[0-9]{2}$/)
+        if(condition) {
+            if($3 == os_RELEASE) {
+                print $0
+            }
+        } else {
+            print $0
+        }
+    }' $CONTRAIL_PLUGIN_DIR/files/debs/contrail
 
 elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
     # Called afer pip requirements installation
@@ -224,15 +289,16 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         #install_package $(_parse_package_files $CONTRAIL_DEST)
 
         # From R4.0, IFMAP server (i.e. irond) dependency was removed
-        if _vercmp $CONTRAIL_BRANCH ">=" R4.0 && is_package_installed ifmap-server; then
-            uninstall_package ifmap-server || true #ifmap-server uninstall does not exit properly
-            # Some directories was install by the ifmap-server package
+        if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
+            if is_package_installed ifmap-server; then
+                uninstall_package ifmap-server || true #ifmap-server uninstall does not exit properly
+            fi
+            # Some needed directories were installed by the ifmap-server package
             sudo mkdir -p /var/lib/contrail
-            sudo chown -R $STACK_USER. /var/lib/contrail/
+            sudo chown -R $STACK_USER:$STACK_USER /var/lib/contrail/
             sudo mkdir -p /var/log/contrail
-            sudo chown -R $STACK_USER:adm /var/log/contrail
+            sudo chown -R $STACK_USER:$STACK_USER /var/log/contrail
             sudo chmod 0750 /var/log/contrail
-            sudo chown -R $STACK_USER. /etc/contrail
         fi
 
         echo_summary "Building contrail"

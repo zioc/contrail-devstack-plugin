@@ -99,6 +99,12 @@ function contrail_config_zookeeper()
     start_service zookeeper
 }
 
+function contrail_config_redis()
+{
+    sudo sed -i "s/bind 127.0.0.1/bind $SERVICE_LISTEN_ADDRESS/g" /etc/redis/redis.conf
+    restart_service redis-server
+}
+
 function contrail_config_api()
 {
     local config_file="/etc/contrail/contrail-api.conf"
@@ -457,13 +463,13 @@ function contrail_config_qemu()
 
     if ! sudo grep -qe '^cgroup_device_acl' /etc/libvirt/qemu.conf; then
         sudo bash -c "cat >> $config_file" <<- "EOF"
-cgroup_device_acl = [
-    "/dev/null", "/dev/full", "/dev/zero",
-    "/dev/random", "/dev/urandom",
-    "/dev/ptmx", "/dev/kvm", "/dev/kqemu",
-    "/dev/rtc", "/dev/hpet","/dev/net/tun",
-]
-EOF
+			cgroup_device_acl = [
+			    "/dev/null", "/dev/full", "/dev/zero",
+			    "/dev/random", "/dev/urandom",
+			    "/dev/ptmx", "/dev/kvm", "/dev/kqemu",
+			    "/dev/rtc", "/dev/hpet","/dev/net/tun",
+			]
+		EOF
         if [[ ! -f /etc/init.d/libvirtd ]]; then
             LIBVIRT_DAEMON=libvirt-bin
         else
@@ -475,6 +481,16 @@ EOF
     if virsh net-info default >/dev/null 2>&1; then
         virsh net-destroy default
         virsh net-undefine default
+    fi
+
+    if [ -f /etc/apparmor.d/abstractions/libvirt-qemu ]; then
+        # Apparmor: Authorize qemu TAP hooks
+	    sudo bash -c "cat >>/etc/apparmor.d/abstractions/libvirt-qemu" <<- "EOF"
+
+			  # qemu tap hook scripts
+			  /etc/qemu-ifup ixr,
+			  /etc/qemu-ifdown ixr,
+		EOF
     fi
 }
 
