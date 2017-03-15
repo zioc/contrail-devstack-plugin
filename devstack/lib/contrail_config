@@ -12,6 +12,21 @@ CASSANDRA_CQL_IP_PORT_LIST=$(echo $CASSANDRA_IP_LIST | \
 ZOOKEEPER_IP_PORT_LIST=$(echo $ZOOKEEPER_IP_LIST | \
     awk -F "," '{for (i=1;i<=NF;i++) $i=$i":2181"; print}')
 
+REDIS_IP_PORT_LIST=$(echo $REDIS_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":6379"; print}')
+
+COLLECTOR_IP_PORT_LIST=$(echo $COLLECTOR_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":8086"; print}')
+
+CONTROL_IP_PORT_LIST=$(echo $CONTROL_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":5269"; print}')
+
+CONFIG_API_IP_PORT_LIST=$(echo $CONFIG_API_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":8082"; print}')
+
+DNS_IP_PORT_LIST=$(echo $DNS_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":53"; print}')
+
 # Conditionnaly set ifmap port
 IFMAP_PORT=8443
 if [[ $USE_SSL == "True" ]]; then
@@ -84,29 +99,28 @@ function contrail_config_zookeeper()
     start_service zookeeper
 }
 
-
-function contrail_config_redis()
-{
-    sudo sed -i "s/bind 127.0.0.1/bind $SERVICE_LISTEN_ADDRESS/g" /etc/redis/redis.conf
-    restart_service redis-server
-}
-
 function contrail_config_api()
 {
     local config_file="/etc/contrail/contrail-api.conf"
     sudo truncate -s 0 $config_file
 
-    iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
-    iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
-    iniset -sudo $config_file DEFAULTS ifmap_username 'api-server'
-    iniset -sudo $config_file DEFAULTS ifmap_password 'api-server'
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
+        iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
+        iniset -sudo $config_file DEFAULTS ifmap_username 'api-server'
+        iniset -sudo $config_file DEFAULTS ifmap_password 'api-server'
+    fi
 
     iniset -sudo $config_file DEFAULTS multi_tenancy $MULTI_TENANCY
     iniset -sudo $config_file DEFAULTS multi_tenancy_with_rbac $MULTI_TENANCY
     iniset -sudo $config_file DEFAULTS auth keystone
 
-    iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
-    iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
+        iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+    fi
 
     iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
     iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
@@ -128,16 +142,16 @@ function contrail_config_schema()
     local config_file="/etc/contrail/contrail-schema.conf"
     sudo truncate -s 0 $config_file
 
-    iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
-    iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
-    iniset -sudo $config_file DEFAULTS ifmap_username 'schema-transformer'
-    iniset -sudo $config_file DEFAULTS ifmap_password 'schema-transformer'
-
     iniset -sudo $config_file DEFAULTS api_server_ip $APISERVER_IP
     iniset -sudo $config_file DEFAULTS api_server_port 8082
 
-    iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
-    iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
+        iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+    fi
+
     iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
     iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
@@ -155,16 +169,16 @@ function contrail_config_svc_monitor()
     local config_file="/etc/contrail/contrail-svc-monitor.conf"
     sudo truncate -s 0 $config_file
 
-    iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
-    iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
-    iniset -sudo $config_file DEFAULTS ifmap_username 'svc_monitor'
-    iniset -sudo $config_file DEFAULTS ifmap_password 'svc_monitor'
-
     iniset -sudo $config_file DEFAULTS api_server_ip $APISERVER_IP
     iniset -sudo $config_file DEFAULTS api_server_port 8082
 
-    iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
-    iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
+        iniset -sudo $config_file DEFAULTS disc_server_port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+    fi
+
     iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
     iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
@@ -179,6 +193,10 @@ function contrail_config_svc_monitor()
 
 function contrail_config_discovery()
 {
+    if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
+        return
+    fi
+
     local config_file="/etc/contrail/contrail-discovery.conf"
     sudo truncate -s 0 $config_file
 
@@ -215,17 +233,17 @@ function contrail_config_control()
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
     iniset -sudo $config_file DEFAULT hostip $CONTROL_IP
 
-    if _vercmp $CONTRAIL_BRANCH ">=" R4.0 || $CONTRAIL_BRANCH "==" master; then
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file IFMAP user $CONTROL_IP
+        iniset -sudo $config_file IFMAP password $CONTROL_IP
+        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
         iniset -sudo $config_file IFMAP rabbitmq_password $RABBIT_PASSWORD
         iniset -sudo $config_file IFMAP rabbitmq_user $RABBIT_USERID
         iniset -sudo $config_file IFMAP rabbitmq_server_list $RABBIT_HOST:'5672'
         iniset -sudo $config_file IFMAP config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
-    else
-        iniset -sudo $config_file IFMAP user $CONTROL_IP
-        iniset -sudo $config_file IFMAP password $CONTROL_IP
-
-        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-        iniset -sudo $config_file DISCOVERY port 5998
     fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
@@ -249,8 +267,12 @@ function contrail_config_collector()
         iniset -sudo $config_file DEFAULT zookeeper_server_list $ZOOKEEPER_IP_PORT_LIST
     fi
 
-    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY port 5998
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY port 5998
+    else
+        iniset -sudo $config_file API_SERVER api_server_list $CONFIG_API_IP_PORT_LIST
+    fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
@@ -276,8 +298,14 @@ function contrail_config_analytics_api()
             iniset -sudo $config_file DEFAULT aaa_mode no-auth
         fi
     fi
-    iniset -sudo $config_file DISCOVERY disc_server_ip $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY disc_server_port 5998
+
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file REDIS redis_uve_list $REDIS_IP_PORT_LIST
+    fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
@@ -297,8 +325,12 @@ function contrail_config_query()
         iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
     fi
 
-    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY port 5998
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+    fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
@@ -322,6 +354,16 @@ function contrail_config_dns()
 
     iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
     iniset -sudo $config_file DISCOVERY port 5998
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file IFMAP rabbitmq_password $RABBIT_PASSWORD
+        iniset -sudo $config_file IFMAP rabbitmq_user $RABBIT_USERID
+        iniset -sudo $config_file IFMAP rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file IFMAP config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
+    fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
@@ -337,8 +379,16 @@ function contrail_config_vrouter_agent()
     local config_file="/etc/contrail/contrail-vrouter-agent.conf"
     sudo truncate -s 0 $config_file
 
-    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY port 5998
+    if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY port 5998
+    else
+        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file CONTROL-NODE servers $CONTROL_IP_PORT_LIST
+        if is_service_enabled dns; then
+            iniset -sudo $config_file DNS servers $DNS_IP_PORT_LIST
+        fi
+    fi
 
     iniset -sudo $config_file METADATA metadata_proxy_secret 'metadatasecret'
     iniset -sudo $NOVA_CONF neutron metadata_proxy_shared_secret 'metadatasecret'
@@ -381,6 +431,10 @@ function contrail_config_heat()
 
 function contrail_config_irond_users()
 {
+    if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
+        return
+    fi
+
     local config_file="/etc/ifmap-server/basicauthusers.properties"
 
     echo 'api-server:api-server' | sudo tee $config_file
@@ -418,6 +472,10 @@ EOF
         restart_service $LIBVIRT_DAEMON
     fi
 
+    if virsh net-info default >/dev/null 2>&1; then
+        virsh net-destroy default
+        virsh net-undefine default
+    fi
 }
 
 function contrail_config_webui()

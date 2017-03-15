@@ -17,7 +17,6 @@ bottle==0.12.8
 cfgm_common
 ConfigParser
 consistent-hash
-discoveryclient
 gevent==1.1a2
 geventhttpclient==1.0a
 kazoo
@@ -36,7 +35,7 @@ sandesh
 sandesh-common
 sseclient
 stevedore
-thrift==0.8.0
+thrift==0.9.3
 vnc_api
 xmltodict
 
