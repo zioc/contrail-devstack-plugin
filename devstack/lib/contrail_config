@@ -255,10 +255,10 @@ function contrail_config_control()
         iniset -sudo $config_file DISCOVERY port 5998
     else
         iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
-        iniset -sudo $config_file IFMAP rabbitmq_password $RABBIT_PASSWORD
-        iniset -sudo $config_file IFMAP rabbitmq_user $RABBIT_USERID
-        iniset -sudo $config_file IFMAP rabbitmq_server_list $RABBIT_HOST:'5672'
-        iniset -sudo $config_file IFMAP config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
+        iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
+        iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
+        iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file CONFIGDB config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
     fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
@@ -364,20 +364,17 @@ function contrail_config_dns()
     iniset -sudo $config_file DEFAULT rndc_secret $rndc_secret
     iniset -sudo $config_file DEFAULT rndc_config_file 'contrail-rndc.conf'
 
-    iniset -sudo $config_file IFMAP user ${CONTROL_IP}.dns
-    iniset -sudo $config_file IFMAP password ${CONTROL_IP}.dns
-
-    iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-    iniset -sudo $config_file DISCOVERY port 5998
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
         iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
         iniset -sudo $config_file DISCOVERY port 5998
+        iniset -sudo $config_file IFMAP user ${CONTROL_IP}.dns
+        iniset -sudo $config_file IFMAP password ${CONTROL_IP}.dns
     else
         iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
-        iniset -sudo $config_file IFMAP rabbitmq_password $RABBIT_PASSWORD
-        iniset -sudo $config_file IFMAP rabbitmq_user $RABBIT_USERID
-        iniset -sudo $config_file IFMAP rabbitmq_server_list $RABBIT_HOST:'5672'
-        iniset -sudo $config_file IFMAP config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
+        iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
+        iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
+        iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file CONFIGDB config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
     fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
