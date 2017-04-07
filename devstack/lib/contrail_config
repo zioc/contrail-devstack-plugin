@@ -27,6 +27,10 @@ CONFIG_API_IP_PORT_LIST=$(echo $CONFIG_API_IP_LIST | \
 DNS_IP_PORT_LIST=$(echo $DNS_IP_LIST | \
     awk -F "," '{for (i=1;i<=NF;i++) $i=$i":53"; print}')
 
+ANALYTICS_IP_PORT_LIST=$(echo $ANALYTICS_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":8081"; print}')
+
+
 # Conditionnaly set ifmap port
 IFMAP_PORT=8443
 if [[ $USE_SSL == "True" ]]; then
@@ -125,7 +129,7 @@ function contrail_config_api()
         iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
         iniset -sudo $config_file DEFAULTS disc_server_port 5998
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULTS collectors $COLLECTOR_IP_PORT_LIST
     fi
 
     iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
@@ -155,7 +159,7 @@ function contrail_config_schema()
         iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
         iniset -sudo $config_file DEFAULTS disc_server_port 5998
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULTS collectors $COLLECTOR_IP_PORT_LIST
     fi
 
     iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
@@ -182,7 +186,12 @@ function contrail_config_svc_monitor()
         iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
         iniset -sudo $config_file DEFAULTS disc_server_port 5998
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULTS collectors $COLLECTOR_IP_PORT_LIST
+    fi
+
+    iniset -sudo $config_file SCHEDULER analytics_server_list ANALYTICS_IP_PORT_LIST
+    if [[ "$MULTI_TENANCY" == "False" ]]; then
+        iniset -sudo $config_file SCHEDULER aaa_mode no-auth
     fi
 
     iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
@@ -309,7 +318,7 @@ function contrail_config_analytics_api()
         iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
         iniset -sudo $config_file DISCOVERY port 5998
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file API_SERVER api_server_list $CONFIG_API_IP_PORT_LIST
         iniset -sudo $config_file REDIS redis_uve_list $REDIS_IP_PORT_LIST
     fi
 
