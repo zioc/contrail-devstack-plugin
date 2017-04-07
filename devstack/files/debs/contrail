@@ -39,15 +39,18 @@ libzookeeper-mt-dev
 
 #cassandra-driver
 
+libtool-bin # 16.04
+
 #in opencontrail ppa
 libipfix-dev
 
-
-nodejs
-nodejs-legacy
-npm
+# FIXME: Remove nodejs on Xenial as it depends on libuv which conflicts with the
+# libuv manually installed for cassandra cpp drivers
+nodejs # 14.04
+nodejs-legacy # 14.04
+npm # 14.04
 zookeeperd
-ifmap-server
+ifmap-server # 14.04
 redis-server
 
 google-mock
