@@ -265,7 +265,8 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
     sudo mkdir -p /etc/contrail
 
     # Set packages specific to the release
-    awk -i inplace -v os_RELEASE=$os_RELEASE '{
+    TMP_PKG_DEBS=$(mktemp)
+    awk -v os_RELEASE=$os_RELEASE '{
         condition=match($0, /[[:space:]]#[[:space:]][0-9]{2}\.[0-9]{2}$/)
         if(condition) {
             if($3 == os_RELEASE) {
@@ -274,7 +275,7 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
         } else {
             print $0
         }
-    }' $CONTRAIL_PLUGIN_DIR/files/debs/contrail
+    }' $CONTRAIL_PLUGIN_DIR/files/debs/contrail > $TMP_PKG_DEBS && mv $TMP_PKG_DEBS $CONTRAIL_PLUGIN_DIR/files/debs/contrail
 
 elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
     # Called afer pip requirements installation
