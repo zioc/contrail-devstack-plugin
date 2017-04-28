@@ -69,6 +69,7 @@ VR_KMOD_OPTS=${VR_KMOD_OPTS:-"vr_flow_entries=4096 vr_oflow_entries=512 vr_bridg
 
 MULTI_TENANCY=${MULTI_TENANCY:-False}
 
+USE_EXTERNAL_CASSANDRA=$(trueorfalse True USE_EXTERNAL_CASSANDRA)
 CASS_MAX_HEAP_SIZE=${CASS_MAX_HEAP_SIZE:-"500M"}
 CASS_HEAP_NEWSIZE=${CASS_HEAP_NEWSIZE:-"100M"}
 
@@ -112,6 +113,9 @@ COMPUTE_HOST_IP=${COMPUTE_HOST_IP:-$HOST_IP}
 
 # Comma separated lists of ip addresses of nodes in the cluster
 CLUSTER_IP_LIST=${CLUSTER_IP_LIST:-$CONFIG_IP}
+
+# ID to separate data on common infra resource (ie. Cassandra and zookeeper DBs)
+CLUSTER_ID=${CLUSTER_ID:-''}
 
 CONTROL_IP_LIST=${CONTROL_IP_LIST:-$CLUSTER_IP_LIST}
 CONFIG_API_IP_LIST=${CONFIG_API_IP_LIST:-$CLUSTER_IP_LIST}
