@@ -70,6 +70,8 @@ function _fill_certificate_options()
 
 function contrail_config_cassandra()
 {
+    [[ "$USE_EXTERNAL_CASSANDRA" == "False" ]] && return
+
     sudo sed -i "s/^\#MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"$CASS_MAX_HEAP_SIZE\"/" /etc/cassandra/cassandra-env.sh
     sudo sed -i "s/^\#HEAP_NEWSIZE=.*/HEAP_NEWSIZE=\"$CASS_HEAP_NEWSIZE\"/" /etc/cassandra/cassandra-env.sh
     #Fix broken java version check
@@ -114,6 +116,8 @@ function contrail_config_api()
     local config_file="/etc/contrail/contrail-api.conf"
     sudo truncate -s 0 $config_file
 
+    [[ -n $CLUSTER_ID ]] && iniset -sudo $config_file DEFAULTS cluster_id $CLUSTER_ID
+
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
         iniset -sudo $config_file DEFAULTS ifmap_server_ip $IFMAP_IP
         iniset -sudo $config_file DEFAULTS ifmap_server_port $IFMAP_PORT
@@ -129,11 +133,11 @@ function contrail_config_api()
         iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
         iniset -sudo $config_file DEFAULTS disc_server_port 5998
     else
-        iniset -sudo $config_file DEFAULTS collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULTS collectors "$COLLECTOR_IP_PORT_LIST"
     fi
 
-    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
-    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
+    iniset -sudo $config_file DEFAULTS zk_server_ip "$ZOOKEEPER_IP_LIST"
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
 
     iniset -sudo $config_file DEFAULTS listen_ip_addr $CONTRAIL_LISTEN_ADDRESS
@@ -152,6 +156,8 @@ function contrail_config_schema()
     local config_file="/etc/contrail/contrail-schema.conf"
     sudo truncate -s 0 $config_file
 
+    [[ -n $CLUSTER_ID ]] && iniset -sudo $config_file DEFAULTS cluster_id $CLUSTER_ID
+
     iniset -sudo $config_file DEFAULTS api_server_ip $APISERVER_IP
     iniset -sudo $config_file DEFAULTS api_server_port 8082
 
@@ -159,11 +165,11 @@ function contrail_config_schema()
         iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
         iniset -sudo $config_file DEFAULTS disc_server_port 5998
     else
-        iniset -sudo $config_file DEFAULTS collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULTS collectors "$COLLECTOR_IP_PORT_LIST"
     fi
 
-    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
-    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
+    iniset -sudo $config_file DEFAULTS zk_server_ip "$ZOOKEEPER_IP_LIST"
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
 
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
@@ -179,6 +185,8 @@ function contrail_config_svc_monitor()
     local config_file="/etc/contrail/contrail-svc-monitor.conf"
     sudo truncate -s 0 $config_file
 
+    [[ -n $CLUSTER_ID ]] && iniset -sudo $config_file DEFAULTS cluster_id $CLUSTER_ID
+
     iniset -sudo $config_file DEFAULTS api_server_ip $APISERVER_IP
     iniset -sudo $config_file DEFAULTS api_server_port 8082
 
@@ -186,16 +194,16 @@ function contrail_config_svc_monitor()
         iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
         iniset -sudo $config_file DEFAULTS disc_server_port 5998
     else
-        iniset -sudo $config_file DEFAULTS collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULTS collectors "$COLLECTOR_IP_PORT_LIST"
     fi
 
-    iniset -sudo $config_file SCHEDULER analytics_server_list ANALYTICS_IP_PORT_LIST
+    iniset -sudo $config_file SCHEDULER analytics_server_list "$ANALYTICS_IP_PORT_LIST"
     if [[ "$MULTI_TENANCY" == "False" ]]; then
         iniset -sudo $config_file SCHEDULER aaa_mode no-auth
     fi
 
-    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
-    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
+    iniset -sudo $config_file DEFAULTS zk_server_ip "$ZOOKEEPER_IP_LIST"
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
 
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
@@ -218,8 +226,8 @@ function contrail_config_discovery()
     iniset -sudo $config_file DEFAULTS listen_ip_addr $CONTRAIL_LISTEN_ADDRESS
     iniset -sudo $config_file DEFAULTS listen_port 5998
 
-    iniset -sudo $config_file DEFAULTS cassandra_server_list $CASSANDRA_IP_PORT_LIST
-    iniset -sudo $config_file DEFAULTS zk_server_ip $ZOOKEEPER_IP_LIST
+    iniset -sudo $config_file DEFAULTS cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
+    iniset -sudo $config_file DEFAULTS zk_server_ip "$ZOOKEEPER_IP_LIST"
     iniset -sudo $config_file DEFAULTS zk_server_port 2181
 
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
@@ -254,11 +262,11 @@ function contrail_config_control()
         iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
         iniset -sudo $config_file DISCOVERY port 5998
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT collectors "$COLLECTOR_IP_PORT_LIST"
         iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
         iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
         iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
-        iniset -sudo $config_file CONFIGDB config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
+        iniset -sudo $config_file CONFIGDB config_db_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
     fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
@@ -272,14 +280,16 @@ function contrail_config_collector()
     local config_file="/etc/contrail/contrail-collector.conf"
     sudo truncate -s 0 $config_file
 
+    [[ -n $CLUSTER_ID ]] && iniset -sudo $config_file DATABASE cluster_id $CLUSTER_ID
+
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
     if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
-        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
     else
-        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
-        iniset -sudo $config_file DEFAULT zookeeper_server_list $ZOOKEEPER_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
+        iniset -sudo $config_file DEFAULT zookeeper_server_list "$ZOOKEEPER_IP_PORT_LIST"
     fi
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
@@ -298,6 +308,8 @@ function contrail_config_analytics_api()
     local config_file="/etc/contrail/contrail-analytics-api.conf"
     sudo truncate -s 0 $config_file
 
+    [[ -n $CLUSTER_ID ]] && iniset -sudo $config_file DATABASE cluster_id $CLUSTER_ID
+
     iniset -sudo $config_file DEFAULT host_ip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
@@ -305,9 +317,9 @@ function contrail_config_analytics_api()
     iniset -sudo $config_file DEFAULT partitions 0
 
     if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
-        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
     else
-        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
 
         if [[ "$MULTI_TENANCY" == "False" ]]; then
             iniset -sudo $config_file DEFAULT aaa_mode no-auth
@@ -319,7 +331,7 @@ function contrail_config_analytics_api()
         iniset -sudo $config_file DISCOVERY port 5998
     else
         iniset -sudo $config_file API_SERVER api_server_list $CONFIG_API_IP_PORT_LIST
-        iniset -sudo $config_file REDIS redis_uve_list $REDIS_IP_PORT_LIST
+        iniset -sudo $config_file REDIS redis_uve_list "$REDIS_IP_PORT_LIST"
     fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
@@ -331,20 +343,22 @@ function contrail_config_query()
     local config_file="/etc/contrail/contrail-query-engine.conf"
     sudo truncate -s 0 $config_file
 
+    [[ -n $CLUSTER_ID ]] && iniset -sudo $config_file DATABASE cluster_id $CLUSTER_ID
+
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
 
     if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
-        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
     else
-        iniset -sudo $config_file DEFAULT cassandra_server_list $CASSANDRA_CQL_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
     fi
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
         iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
         iniset -sudo $config_file DISCOVERY port 5998
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT collectors "$COLLECTOR_IP_PORT_LIST"
     fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
@@ -370,11 +384,11 @@ function contrail_config_dns()
         iniset -sudo $config_file IFMAP user ${CONTROL_IP}.dns
         iniset -sudo $config_file IFMAP password ${CONTROL_IP}.dns
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT collectors "$COLLECTOR_IP_PORT_LIST"
         iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
         iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
         iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
-        iniset -sudo $config_file CONFIGDB config_db_server_list $CASSANDRA_CQL_IP_PORT_LIST
+        iniset -sudo $config_file CONFIGDB config_db_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
     fi
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
@@ -395,10 +409,10 @@ function contrail_config_vrouter_agent()
         iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
         iniset -sudo $config_file DISCOVERY port 5998
     else
-        iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
-        iniset -sudo $config_file CONTROL-NODE servers $CONTROL_IP_PORT_LIST
+        iniset -sudo $config_file DEFAULT collectors "$COLLECTOR_IP_PORT_LIST"
+        iniset -sudo $config_file CONTROL-NODE servers "$CONTROL_IP_PORT_LIST"
         if is_service_enabled dns; then
-            iniset -sudo $config_file DNS servers $DNS_IP_PORT_LIST
+            iniset -sudo $config_file DNS servers "$DNS_IP_PORT_LIST"
         fi
     fi
 

@@ -34,6 +34,8 @@ function fetch_contrail() {
 }
 
 function install_cassandra() {
+    [[ "$USE_EXTERNAL_CASSANDRA" == "False" ]] && return
+
     if ! which cassandra > /dev/null 2>&1 ; then
         echo "Installing cassanadra"
         echo "deb http://www.apache.org/dist/cassandra/debian 21x main" | \
