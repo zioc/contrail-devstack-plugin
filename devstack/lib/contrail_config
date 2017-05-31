@@ -441,7 +441,7 @@ function contrail_config_vrouter_agent()
 
 function contrail_config_heat()
 {
-    if is_service_enabled heat; then
+    if pip show -q heat; then
         setup_package $CONTRAIL_DEST/openstack/contrail-heat -e
 
         iniset $HEAT_CONF DEFAULT plugin_dirs \
