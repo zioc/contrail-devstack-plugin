@@ -166,20 +166,20 @@ function start_contrail() {
     [ ! -d /var/log/contrail ] && sudo mkdir /var/log/contrail
     sudo chmod 777 /var/log/contrail
 
-    run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
-    run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf"
+    run_process vrouter "$(which contrail-vrouter-agent) --config_file=/etc/contrail/contrail-vrouter-agent.conf" root root
+    run_process api-srv "$(which contrail-api) --conf_file /etc/contrail/contrail-api.conf"
     # Wait for api to be ready, as it creates cassandra CF required for disco to start
     is_service_enabled disco && is_service_enabled api-srv && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
-    run_process disco "contrail-discovery --conf_file /etc/contrail/contrail-discovery.conf"
-    run_process svc-mon "contrail-svc-monitor --conf_file /etc/contrail/contrail-svc-monitor.conf"
-    run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
-    run_process control "sudo contrail-control --conf_file /etc/contrail/contrail-control.conf"
-    run_process collector "contrail-collector --conf_file /etc/contrail/contrail-collector.conf"
-    run_process analytic-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
-    run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
-    run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
+    run_process disco "$(which contrail-discovery) --conf_file /etc/contrail/contrail-discovery.conf"
+    run_process svc-mon "$(which contrail-svc-monitor) --conf_file /etc/contrail/contrail-svc-monitor.conf"
+    run_process schema "$(which contrail-schema) --conf_file /etc/contrail/contrail-schema.conf"
+    run_process control "$(which contrail-control) --conf_file /etc/contrail/contrail-control.conf" root root
+    run_process collector "$(which contrail-collector) --conf_file /etc/contrail/contrail-collector.conf"
+    run_process analytic-api "$(which contrail-analytics-api) --conf_file /etc/contrail/contrail-analytics-api.conf"
+    run_process query-engine "$(which contrail-query-engine) --conf_file /etc/contrail/contrail-query-engine.conf"
+    run_process dns "$(which contrail-dns) --conf_file /etc/contrail/dns/contrail-dns.conf"
     #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in /proc/[pid]/cmdline to retrieve bind status
-    run_process named "sudo /usr/bin/contrail-named -g -c /etc/contrail/dns/contrail-named.conf"
+    run_process named "$(which contrail-named) -g -c /etc/contrail/dns/contrail-named.conf" root root
 
     run_process ui-jobs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs jobServerStart.js"
     run_process ui-webs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs webServerStart.js"
@@ -405,21 +405,9 @@ elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
     :
 
 elif [[ "$1" == "unstack" ]]; then
-    STACK_SCREEN_NAME="$SCREEN_NAME"
-    SCREEN_NAME=$CONTRAIL_SCREEN_NAME
     for service in ${CONTRAIL_SVC_LIST}; do
-        # Devstack 'stop_process' function cannot kill process ran as root or another stack's user
-        # If we use systemd, all process can be stop as systemctl command is run as root
-        if [[ "$USE_SCREEN" = "True" && "vrouter control named ui-jobs ui-webs" =~ (^|[[:space:]])"$service"($|[[:space:]]) ]] ; then
-            if [[ -r $SERVICE_DIR/$SCREEN_NAME/$service.pid ]]; then
-                sudo pkill -g $(cat $SERVICE_DIR/$SCREEN_NAME/$service.pid)
-                rm $SERVICE_DIR/$SCREEN_NAME/$service.pid
-            fi
-	else
-            stop_process $service
-	fi
+        stop_process $service
     done
-    SCREEN_NAME="$STACK_SCREEN_NAME"
 
     # Clean up the remainder of the screen processes
     SCREEN=$(which screen)
