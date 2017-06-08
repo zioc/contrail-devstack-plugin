@@ -352,6 +352,9 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
 
     echo_summary "Configuring contrail"
 
+elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+    # Called after services configuration
+
     source $CONTRAIL_PLUGIN_DIR/lib/contrail_config
     # Use bash completion features to conveniently run all config functions
     for config_func in $(compgen -A function contrail_config_); do
@@ -361,9 +364,6 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
     # Force vrouter module re-insertion if asked
     [[ "$RELOAD_VROUTER" == "True" ]] && remove_vrouter
     insert_vrouter
-
-elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
-    # Called after services configuration
 
     echo_summary "Starting contrail"
     #FIXME: Contrail api must be started before neutron, this is why it must be done here.
