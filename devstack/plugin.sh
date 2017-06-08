@@ -409,6 +409,22 @@ elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
     :
 
 elif [[ "$1" == "unstack" ]]; then
+    STACK_SCREEN_NAME="$SCREEN_NAME"
+    SCREEN_NAME=$CONTRAIL_SCREEN_NAME
+    for service in ${CONTRAIL_SVC_LIST}; do
+        # Devstack 'stop_process' function cannot kill process ran as root or another stack's user
+        # If we use systemd, all process can be stop as systemctl command is run as root
+        if [[ "$USE_SCREEN" = "True" && "vrouter control contrail-named ui-jobs ui-webs" =~ (^|[[:space:]])"$service"($|[[:space:]]) ]] ; then
+            if [[ -r $SERVICE_DIR/$SCREEN_NAME/$service.pid ]]; then
+                sudo pkill -g $(cat $SERVICE_DIR/$SCREEN_NAME/$service.pid)
+                rm $SERVICE_DIR/$SCREEN_NAME/$service.pid
+            fi
+	else
+            stop_process $service
+	fi
+    done
+    SCREEN_NAME="$STACK_SCREEN_NAME"
+
     # Clean up the remainder of the screen processes
     SCREEN=$(which screen)
     if [[ -n "$SCREEN" ]]; then
