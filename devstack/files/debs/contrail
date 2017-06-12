@@ -48,9 +48,9 @@ libipfix-dev
 # libuv manually installed for cassandra cpp drivers
 libuv1-dev
 nodejs
+nodejs-legacy
 npm
 zookeeperd
-ifmap-server # 14.04
 redis-server
 
 google-mock
