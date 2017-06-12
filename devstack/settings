@@ -38,12 +38,6 @@ if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
     disable_service disco
 fi
 
-# FIXME: Remove nodejs on Xenial as it depends on libuv which conflicts with
-# the libuv manually installed for cassandra cpp drivers
-if _vercmp $os_RELEASE "==" '16.04'; then
-    disable_service ui-jobs ui-webs
-fi
-
 CONTRAIL_DEST=${CONTRAIL_DEST:-$DEST/contrail}
 
 SCONS_TARGET=${SCONS_TARGET:-production}
