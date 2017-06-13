@@ -414,7 +414,7 @@ elif [[ "$1" == "unstack" ]]; then
     for service in ${CONTRAIL_SVC_LIST}; do
         # Devstack 'stop_process' function cannot kill process ran as root or another stack's user
         # If we use systemd, all process can be stop as systemctl command is run as root
-        if [[ "$USE_SCREEN" = "True" && "vrouter control contrail-named ui-jobs ui-webs" =~ (^|[[:space:]])"$service"($|[[:space:]]) ]] ; then
+        if [[ "$USE_SCREEN" = "True" && "vrouter control named ui-jobs ui-webs" =~ (^|[[:space:]])"$service"($|[[:space:]]) ]] ; then
             if [[ -r $SERVICE_DIR/$SCREEN_NAME/$service.pid ]]; then
                 sudo pkill -g $(cat $SERVICE_DIR/$SCREEN_NAME/$service.pid)
                 rm $SERVICE_DIR/$SCREEN_NAME/$service.pid
