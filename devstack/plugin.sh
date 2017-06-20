@@ -63,9 +63,9 @@ function install_cassandra_cpp_driver() {
     CASS_CPP_DIR=$CONTRAIL_DEST/third_party/cass-cpp-driver
     git_clone https://github.com/datastax/cpp-driver.git $CASS_CPP_DIR master
 
-    mkdir $CASS_CPP_DIR/build
+    mkdir -p $CASS_CPP_DIR/build
     cd $CASS_CPP_DIR/build
-    cmake ..
+    cmake -DCMAKE_INSTALL_PREFIX=/usr ..
     make
     sudo make install
 
