@@ -329,8 +329,8 @@ function contrail_config_analytics_api()
     fi
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
-        iniset -sudo $config_file DISCOVERY server $DISCOVERY_IP
-        iniset -sudo $config_file DISCOVERY port 5998
+        iniset -sudo $config_file DISCOVERY disc_server_ip $DISCOVERY_IP
+        iniset -sudo $config_file DISCOVERY disc_server_port 5998
     else
         iniset -sudo $config_file API_SERVER api_server_list $CONFIG_API_IP_PORT_LIST
         iniset -sudo $config_file REDIS redis_uve_list "$REDIS_IP_PORT_LIST"
