@@ -146,6 +146,8 @@ function contrail_config_api()
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULTS log_local 1
 
+    iniset -sudo $config_file DEFAULTS apply_subnet_host_routes True
+
     _fill_keystone_options $config_file
     _fill_rabbit_options $config_file
     _fill_certificate_options $config_file
