@@ -65,11 +65,7 @@ function install_cassandra_cpp_driver() {
 
     wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver_2.5.0-1_amd64.deb
     wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver-dev_2.5.0-1_amd64.deb
-    if [[ "$os_RELEASE" == "16.04" ]]; then
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/dependenices/libuv/v1.8.0/libuv_1.8.0-1_amd64.deb
-    else
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/dependencies/libuv/v1.8.0/libuv_1.8.0-1_amd64.deb
-    fi
+    wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/dependencies/libuv/v1.8.0/libuv_1.8.0-1_amd64.deb
 
     sudo dpkg -i *.deb
 
