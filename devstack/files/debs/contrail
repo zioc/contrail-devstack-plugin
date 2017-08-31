@@ -59,3 +59,4 @@ google-mock
 libgrok-dev
 libpcre3-dev
 libgrok1
+libtokyocabinet-dev
