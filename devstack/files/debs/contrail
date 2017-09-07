@@ -60,3 +60,4 @@ libgrok-dev
 libpcre3-dev
 libgrok1
 libtokyocabinet-dev
+liblz4-dev
