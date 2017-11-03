@@ -137,7 +137,7 @@ function start_contrail() {
     STACK_SCREEN_NAME="$SCREEN_NAME"
     SCREEN_NAME=$CONTRAIL_SCREEN_NAME
 
-    USE_SCREEN=$(trueorfalse True USE_SCREEN)
+    USE_SCREEN=$(trueorfalse False USE_SCREEN)
     if [[ "$USE_SCREEN" == "True" ]]; then
         # Create a new named screen to run processes in
         screen -d -m -S $SCREEN_NAME -t shell -s /bin/bash
@@ -159,7 +159,7 @@ function start_contrail() {
     fi
 
     # Initialize the directory for service status check
-    init_service_check
+    type -p init_service_check && init_service_check
 
     # Ensure log directory will be writable and exists
     [ ! -d /var/log/contrail ] && sudo mkdir /var/log/contrail
