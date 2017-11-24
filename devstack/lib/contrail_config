@@ -39,12 +39,10 @@ fi
 
 function _fill_keystone_options()
 {
-    iniset -sudo $1 KEYSTONE auth_host $KEYSTONE_AUTH_HOST
+    iniset -sudo $1 KEYSTONE auth_url $KEYSTONE_SERVICE_URI
     iniset -sudo $1 KEYSTONE admin_user $CONTRAIL_ADMIN_USER
     iniset -sudo $1 KEYSTONE admin_password $CONTRAIL_ADMIN_PASSWORD
     iniset -sudo $1 KEYSTONE admin_tenant_name $CONTRAIL_ADMIN_PROJECT
-    iniset -sudo $1 KEYSTONE auth_port 5000
-    iniset -sudo $1 KEYSTONE auth_protocol http
     if [ "$USE_MEMCACHE" == "True" ]; then #FIXME
         iniset -sudo $config_file KEYSTONE memcache_servers '127.0.0.1:11211'
     fi
