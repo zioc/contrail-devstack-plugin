@@ -61,7 +61,7 @@ function install_cassandra_cpp_driver() {
 
     echo "Installing cassanadra CPP drivers"
     CASS_CPP_DIR=$CONTRAIL_DEST/third_party/cass-cpp-driver
-    git_clone https://github.com/datastax/cpp-driver.git $CASS_CPP_DIR master
+    git_clone https://github.com/datastax/cpp-driver.git $CASS_CPP_DIR 2.7.0
 
     mkdir -p $CASS_CPP_DIR/build
     cd $CASS_CPP_DIR/build
