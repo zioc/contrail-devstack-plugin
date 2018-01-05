@@ -77,6 +77,7 @@ function contrail_config_cassandra()
 
     #NOTE: it isn't safe to use SERVICE_LISTEN_ADDRESS here, as cassandra can't bind 0.0.0.0
     sudo sed -i "s/listen_address:.*/listen_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
+    sudo sed -i "s/start_rpc: false/start_rpc: true/" /etc/cassandra/cassandra.yaml
     sudo sed -i "s/rpc_address:.*/rpc_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
 
     sudo sed -i "s/seeds:.*/seeds: $CASSANDRA_IP_LIST/" /etc/cassandra/cassandra.yaml

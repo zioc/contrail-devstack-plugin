@@ -38,7 +38,7 @@ function install_cassandra() {
 
     if ! which cassandra > /dev/null 2>&1 ; then
         echo "Installing cassanadra"
-        echo "deb http://www.apache.org/dist/cassandra/debian 21x main" | \
+        echo "deb http://www.apache.org/dist/cassandra/debian 34x main" | \
         sudo tee /etc/apt/sources.list.d/cassandra.list
         # Use curl instead of gpg as it deals better with proxies
         curl -sL --retry 5 "https://www.apache.org/dist/cassandra/KEYS" | sudo apt-key add -
@@ -47,7 +47,9 @@ function install_cassandra() {
         # sudo -E apt-get install -y cassandra
         # On Xenial, force to use jre 8. jre 9 is install by default and conflicts with Cassandra 2.1
         if _vercmp $os_RELEASE "==" '16.04'; then
-            install_package openjdk-8-jre openjdk-8-jre-headless
+            # install_package openjdk-8-jre openjdk-8-jre-headless
+            wget http://launchpadlibrarian.net/109052632/python-support_1.0.15_all.deb
+            sudo dpkg -i python-support_1.0.15_all.deb  # dependence to cassandra deb package no available anymore on Ubuntu repo
         fi
         install_package cassandra
     fi
