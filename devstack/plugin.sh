@@ -240,19 +240,19 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
 				Pin-Priority: 50
 			EOF
 
-            if ! apt-cache policy | grep -q yakkety; then
-				# OpenContrail PPA only propose trusty release
-				sudo sed -i 's/xenial/trusty/' /etc/apt/sources.list.d/opencontrail-ubuntu-ppa-xenial.list
+            if ! apt-cache policy | grep -q artful; then
+                # OpenContrail PPA only propose trusty release
+                sudo sed -i 's/xenial/trusty/' /etc/apt/sources.list.d/opencontrail-ubuntu-ppa-xenial.list
                 # For 16.04, backport rdkafka library from 16.10
-                sudo cp /etc/apt/sources.list /etc/apt/sources.list.d/yakkety.list
-                sudo sed -i 's/xenial/yakkety/' /etc/apt/sources.list.d/yakkety.list
-                cat <<- EOF | sudo tee /etc/apt/preferences.d/yakkety
+                sudo cp /etc/apt/sources.list /etc/apt/sources.list.d/artful.list
+                sudo sed -i 's/xenial/artful/' /etc/apt/sources.list.d/artful.list
+                cat <<- EOF | sudo tee /etc/apt/preferences.d/artful
 					Package: librdkafka*
-					Pin: release n=yakkety
+					Pin: release n=artful
 					Pin-Priority: 990
 
 					Package: *
-					Pin: release n=yakkety
+					Pin: release n=artful
 					Pin-Priority: 50
 				EOF
             fi
