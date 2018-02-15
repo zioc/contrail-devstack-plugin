@@ -54,6 +54,7 @@ ifmap-server # 14.04
 redis-server
 
 google-mock
+libgoogle-perftools-dev
 
 # Analytics dependencies
 libgrok-dev
