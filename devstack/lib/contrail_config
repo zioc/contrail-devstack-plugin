@@ -291,6 +291,10 @@ function contrail_config_collector()
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
         iniset -sudo $config_file DEFAULT zookeeper_server_list "$ZOOKEEPER_IP_PORT_LIST"
+        iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
+        iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
+        iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file CONFIGDB config_db_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
     fi
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
