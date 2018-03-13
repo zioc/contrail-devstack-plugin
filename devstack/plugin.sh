@@ -77,8 +77,9 @@ function install_cassandra_cpp_driver() {
 function fetch_webui(){
     if [[ ! -e "$CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE" || "$RECLONE" == "True" ]]; then
         cd $CONTRAIL_DEST/contrail-web-core
-        sed -ie "s|webController\.path.*|webController\.path = \'$CONTRAIL_DEST/contrail-web-controller\';|" config/config.global.js
+        sed -ie "s|/usr/src/contrail|$CONTRAIL_DEST|g" config/config.global.js
         make fetch-pkgs-prod
+        npm rebuild
         make dev-env REPO=webController
         touch $CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE
         cd $TOP_DIR
@@ -181,9 +182,18 @@ function start_contrail() {
     run_process dns "$(which contrail-dns) --conf_file /etc/contrail/dns/contrail-dns.conf"
     #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in /proc/[pid]/cmdline to retrieve bind status
     run_process named "$(which contrail-named) -g -c /etc/contrail/dns/contrail-named.conf" root root
-
-    run_process ui-jobs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs jobServerStart.js"
-    run_process ui-webs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs webServerStart.js"
+    # NodeJS needs to be run in the source UI foder. Hack to set working directory in the systemd unit file
+    for ui_type in job web; do
+        local service_name="ui-${ui_type}s"
+        local systemd_service="devstack@${service_name}.service"
+        local unitfile=$SYSTEMD_DIR/$systemd_service
+        local service_binary="${ui_type}ServerStart.js"
+        run_process $service_name "$(which nodejs) $service_binary" root root
+        $SYSTEMCTL stop $systemd_service
+        iniset -sudo $unitfile "Service" "WorkingDirectory" "$CONTRAIL_DEST/contrail-web-core"
+        $SYSTEMCTL daemon-reload
+        $SYSTEMCTL start $systemd_service
+    done
 
     SCREEN_NAME="$STACK_SCREEN_NAME"
 }

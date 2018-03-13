@@ -521,7 +521,13 @@ function contrail_config_webui()
 
     if is_service_enabled ui-webs ui-jobs; then
         sed -ie "s|discoveryService\.enable.*|discoveryService\.enable = false;|" $config_file
-        sed -ie "s|regions\.RegionOne.*|regions\.RegionOne = \'http://$KEYSTONE_AUTH_HOST:5000/v2.0\';|" $config_file
+        quoted_ips=$(for ip in $CASSANDRA_IP_LIST; do echo "'$ip'"; done)
+        sed -ie "s|config\.cassandra\.server_ips.*|config\.cassandra\.server_ips = [$quoted_ips];|" $config_file
+        sed -ie "s|regions\.$REGION_NAME.*|regions\.RegionOne = \'$KEYSTONE_AUTH_URI\';|" $config_file
+        sed -ie "s|identityManager\.authProtocol.*|identityManager\.authProtocol = \'$KEYSTONE_AUTH_PROTOCOL\';|" $config_file
         sed -ie "s|identityManager\.ip.*|identityManager\.ip = \'$KEYSTONE_AUTH_HOST\';|" $config_file
+        sed -ie "s|identityManager\.port.*|identityManager\.port = \'80\';|" $config_file
+        sed -ie "s|identityManager\.urlPrefix.*|identityManager\.urlPrefix = \'/identity\';|" $config_file
+        sed -ie "s|identityManager\.apiVersion.*|identityManager\.apiVersion = [\'v$IDENTITY_API_VERSION\'];|" $config_file
     fi
 }
