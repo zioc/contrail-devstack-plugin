@@ -40,11 +40,9 @@ fi
 
 CONTRAIL_DEST=${CONTRAIL_DEST:-$DEST/contrail}
 
-SCONS_TARGET=${SCONS_TARGET:-production}
+SCONS_TARGET=${SCONS_TARGET:-debug}
 command -v nproc > /dev/null && SCONS_JOBS=${SCONS_JOBS:-$[$(nproc) + 1]} || SCONS_JOBS=${SCONS_JOBS:-1}
 SCONS_ARGS="-j$SCONS_JOBS --opt=$SCONS_TARGET --root=/ install"
-
-BUILD_OPT=${BUILD_OPT:-production}
 
 # vrouter kernel module options
 #------------------------------
