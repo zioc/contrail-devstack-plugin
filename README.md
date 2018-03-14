@@ -6,7 +6,8 @@ This repo provides a devstack plugin to try and hack opencontrail + openstack.
 Supported distros / releases
 ============================
 
-For now, ubuntu trusty (14.04) is the only supported distribution.
+For now, ubuntu trusty (14.04) and xenial (16.04) is the only supported
+distributions.
 
 Requirements
 ============
@@ -26,14 +27,14 @@ Install a fresh environment (with git), and pull devstack sources:
 
 It may be safer to use a stable version of devstack & openstack
 
-    git checkout stable/mitaka
+    git checkout stable/queens
 
 Note: If you want to apply a patch to the build you can specifying git patch
-command to apply by appending the following line to your local.conf:
+command to apply by appending the following line to your `local.conf`:
 
     CONTRAIL_PATCHES='cd $CONTRAIL_DEST/controller && git fetch https://review.opencontrail.org/Juniper/contrail-controller refs/changes/10/20010/4 && git cherry-pick FETCH_HEAD'
 
-Copy sample local.conf into devstack directory, and enable this plugin
+Copy sample `local.conf` into devstack directory, and enable this plugin
 
     cp samples/local.conf .
     echo "enable_plugin contrail https://github.com/zioc/contrail-devstack-plugin.git" >> local.conf
@@ -51,27 +52,31 @@ Custom parameters
 All parameters related to this plugin are defined in devstack/settings,
 they may be overwritten in your local.conf, for example:
 
-    #Use R3.0 contrail branch
-    CONTRAIL_BRANCH=R3.0
+    # Use R4.1 contrail branch
+    CONTRAIL_BRANCH=R4.1
 
-    #Provide a custom list of enabled services (by default dns and webui would be enabled in addition to the following list)
-    enable_service vrouter api-srv disco svc-mon schema control collector analytics-api query-engine
+    # Provide a custom list of enabled services (by default dns and webui would be enabled in addition to the following list)
+    enable_service contrail-vrouter contrail-api contrail-svc contrail-schema contrail-control contrail-collector contrail-analytics contrail-query
+    # or by disabling unwanted services
+    disable_service contrail-ui-webs contrail-ui-jobs contrail-named contrail-dns
 
 Plumbing
 ========
 
-By default, plugin will attempt to plug vrouter on default interface (the one used to reach the default gateway)
-If you intent to use another interface, or if plugin fails to retrive it, you can specify it in local.conf:
+By default, plugin will attempt to plug vrouter on default interface (the one
+used to reach the default gateway). If you intent to use another interface, or
+if plugin fails to retrieve it, you can specify it in local.conf:
 
     VHOST_INTERFACE_NAME=eth1
 
-Interface configuration and default gateway should be retrieved by plugin, if you want to overload it, use following parameters:
+Interface configuration and default gateway should be retrieved by plugin, if
+you want to overload it, use following parameters:
 
     VHOST_INTERFACE_CIDR=10.0.0.1/24
     VHOST_INTERFACE_IP=10.0.0.1
     DEFAULT_GW=10.0.0.254
 
-Devstack creates a couple of network by default (Public and Private), for convenience,
-Public network prefix (defined by FLOATING_RANGE parameter) is routed through contrail
-virtual gateway interface. This prefix is masqueraded on the host in order to allow seamless
-external connectivity.
+Devstack creates a couple of network by default (`public` and `private`), for
+convenience, `public` network prefix (defined by `FLOATING_RANGE` parameter) is
+routed through contrail virtual gateway interface. This prefix is masqueraded
+on the host in order to allow seamless external connectivity.

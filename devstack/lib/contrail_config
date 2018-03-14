@@ -416,7 +416,7 @@ function contrail_config_vrouter_agent()
     else
         iniset -sudo $config_file DEFAULT collectors "$COLLECTOR_IP_PORT_LIST"
         iniset -sudo $config_file CONTROL-NODE servers "$CONTROL_IP_PORT_LIST"
-        if is_service_enabled dns; then
+        if is_service_enabled contrail-dns; then
             iniset -sudo $config_file DNS servers "$DNS_IP_PORT_LIST"
         fi
     fi
@@ -523,7 +523,7 @@ function contrail_config_webui()
 {
     local config_file="$CONTRAIL_DEST/contrail-web-core/config/config.global.js"
 
-    if is_service_enabled ui-webs ui-jobs; then
+    if is_service_enabled contrail-ui-webs contrail-ui-jobs; then
         sed -ie "s|discoveryService\.enable.*|discoveryService\.enable = false;|" $config_file
         quoted_ips=$(for ip in $CASSANDRA_IP_LIST; do echo "'$ip'"; done)
         sed -ie "s|config\.cassandra\.server_ips.*|config\.cassandra\.server_ips = [$quoted_ips];|" $config_file

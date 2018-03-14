@@ -4,7 +4,7 @@
 # Make sure nova-network and neutron agents aren't enabled
 disable_service n-net q-agt q-l3 q-dhcp q-meta q-dhcp q-lbaas
 
-CONTRAIL_SVC_LIST="vrouter api-srv disco svc-mon schema control collector analytic-api query-engine dns named ui-jobs ui-webs"
+CONTRAIL_SVC_LIST="contrail-vrouter contrail-api contrail-disco contrail-svc contrail-schema contrail-control contrail-collector contrail-analytic contrail-query contrail-dns contrail-named contrail-ui-jobs contrail-ui-webs"
 
 # Check if some specific services have been enbled in local.conf
 if ! is_service_enabled $CONTRAIL_SVC_LIST; then
@@ -35,7 +35,7 @@ CONTRAIL_BRANCH=${CONTRAIL_BRANCH:-master}
 
 # Discovery service was removed since R4.0 Contrail release
 if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
-    disable_service disco
+    disable_service contrail-disco
 fi
 
 CONTRAIL_DEST=${CONTRAIL_DEST:-$DEST/contrail}

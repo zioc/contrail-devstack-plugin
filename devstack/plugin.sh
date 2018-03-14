@@ -168,23 +168,23 @@ function start_contrail() {
     [ ! -d /var/log/contrail ] && sudo mkdir /var/log/contrail
     sudo chmod 777 /var/log/contrail
 
-    run_process vrouter "$(which contrail-vrouter-agent) --config_file=/etc/contrail/contrail-vrouter-agent.conf" root root
-    run_process api-srv "$(which contrail-api) --conf_file /etc/contrail/contrail-api.conf"
+    run_process contrail-vrouter "$(which contrail-vrouter-agent) --config_file=/etc/contrail/contrail-vrouter-agent.conf" root root
+    run_process contrail-api "$(which contrail-api) --conf_file /etc/contrail/contrail-api.conf"
     # Wait for api to be ready, as it creates cassandra CF required for disco to start
-    is_service_enabled disco && is_service_enabled api-srv && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
-    run_process disco "$(which contrail-discovery) --conf_file /etc/contrail/contrail-discovery.conf"
-    run_process svc-mon "$(which contrail-svc-monitor) --conf_file /etc/contrail/contrail-svc-monitor.conf"
-    run_process schema "$(which contrail-schema) --conf_file /etc/contrail/contrail-schema.conf"
-    run_process control "$(which contrail-control) --conf_file /etc/contrail/contrail-control.conf" root root
-    run_process collector "$(which contrail-collector) --conf_file /etc/contrail/contrail-collector.conf"
-    run_process analytic-api "$(which contrail-analytics-api) --conf_file /etc/contrail/contrail-analytics-api.conf"
-    run_process query-engine "$(which contrail-query-engine) --conf_file /etc/contrail/contrail-query-engine.conf"
-    run_process dns "$(which contrail-dns) --conf_file /etc/contrail/dns/contrail-dns.conf"
+    is_service_enabled contrail-disco && is_service_enabled contrail-api && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
+    run_process contrail-disco "$(which contrail-discovery) --conf_file /etc/contrail/contrail-discovery.conf"
+    run_process contrail-svc "$(which contrail-svc-monitor) --conf_file /etc/contrail/contrail-svc-monitor.conf"
+    run_process contrail-schema "$(which contrail-schema) --conf_file /etc/contrail/contrail-schema.conf"
+    run_process contrail-control "$(which contrail-control) --conf_file /etc/contrail/contrail-control.conf" root root
+    run_process contrail-collector "$(which contrail-collector) --conf_file /etc/contrail/contrail-collector.conf"
+    run_process contrail-analytic "$(which contrail-analytics-api) --conf_file /etc/contrail/contrail-analytics-api.conf"
+    run_process contrail-query "$(which contrail-query-engine) --conf_file /etc/contrail/contrail-query-engine.conf"
+    run_process contrail-dns "$(which contrail-dns) --conf_file /etc/contrail/dns/contrail-dns.conf"
     #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in /proc/[pid]/cmdline to retrieve bind status
-    run_process named "$(which contrail-named) -g -c /etc/contrail/dns/contrail-named.conf" root root
+    run_process contrail-named "$(which contrail-named) -g -c /etc/contrail/dns/contrail-named.conf" root root
     # NodeJS needs to be run in the source UI foder. Hack to set working directory in the systemd unit file
     for ui_type in job web; do
-        local service_name="ui-${ui_type}s"
+        local service_name="contrail-ui-${ui_type}s"
         local systemd_service="devstack@${service_name}.service"
         local unitfile=$SYSTEMD_DIR/$systemd_service
         local service_binary="${ui_type}ServerStart.js"
@@ -291,7 +291,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
     fetch_contrail
 
-    if is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
+    if is_service_enabled contrail-api contrail-disco contrail-svc contrail-schema contrail-control contrail-collector contrail-analytic contrail-query contrail-dns contrail-named; then
         install_cassandra
         install_cassandra_cpp_driver
 
@@ -326,13 +326,13 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         # Recent OpenStack release require at least Thrift 0.10.0.
         sudo pip install -U thrift==0.9.3
     fi
-    if is_service_enabled vrouter; then
+    if is_service_enabled contrail-vrouter; then
         echo_summary "Building contrail vrouter"
 
         cd $CONTRAIL_DEST
 
         # Build vrouter-agent if not done earlier
-        if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
+        if ! is_service_enabled contrail-api contrail-disco contrail-svc contrail-schema contrail-control contrail-collector contrail-analytic contrail-query contrail-dns contrail-named; then
             sudo -E scons $SCONS_ARGS controller/src/vnsw
         fi
 
@@ -346,7 +346,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
         cd $TOP_DIR
     fi
-    if is_service_enabled ui-webs ui-jobs; then
+    if is_service_enabled contrail-ui-webs contrail-ui-jobs; then
         # Fetch 3rd party and install webui
         fetch_webui
     fi
@@ -386,17 +386,17 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
     local provision_api_args="--api_server_ip $SERVICE_HOST --api_server_port 8082 \
         --admin_user $CONTRAIL_ADMIN_USER --admin_password $CONTRAIL_ADMIN_PASSWORD --admin_tenant_name $CONTRAIL_ADMIN_PROJECT"
 
-    if is_service_enabled vrouter ; then
+    if is_service_enabled contrail-vrouter ; then
         /usr/share/contrail/provision_vrouter.py $provision_api_args \
             --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $VHOST_INTERFACE_IP \
             || /bin/true    # Failure is not critical
     fi
-    if is_service_enabled control ; then
+    if is_service_enabled contrail-control ; then
         /usr/share/contrail/provision_control.py $provision_api_args \
             --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 \
             || /bin/true    # Failure is not critical
     fi
-    if is_service_enabled api-srv ; then
+    if is_service_enabled contrail-api ; then
         /usr/share/contrail/provision_linklocal.py $provision_api_args \
             --oper add --linklocal_service_name metadata --linklocal_service_ip 169.254.169.254 \
             --linklocal_service_port 80 --ipfabric_service_ip $NOVA_SERVICE_HOST --ipfabric_service_port 8775 \
