@@ -52,6 +52,7 @@ nodejs-legacy
 npm
 zookeeperd
 redis-server
+liburcu-dev
 
 google-mock
 libgoogle-perftools-dev
