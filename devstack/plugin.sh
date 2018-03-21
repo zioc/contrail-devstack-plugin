@@ -313,6 +313,9 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
         echo_summary "Building contrail"
         cd $CONTRAIL_DEST
+        # TODO(ethuleau): Don't install fabric package due to bug
+        # https://bugs.launchpad.net/juniperopenstack/+bug/1757518
+        sed -ie "/fabric-ansible/ s/^/#/" controller/src/config/SConscript
         sudo -E scons $SCONS_ARGS
         cd $TOP_DIR
 
