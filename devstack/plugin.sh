@@ -34,7 +34,7 @@ function fetch_contrail() {
 }
 
 function install_cassandra() {
-    [[ "$USE_EXTERNAL_CASSANDRA" == "False" ]] && return
+    [[ "$USE_EXTERNAL_CASSANDRA" == "True" ]] && return
 
     if ! which cassandra > /dev/null 2>&1 ; then
         echo "Installing cassanadra"

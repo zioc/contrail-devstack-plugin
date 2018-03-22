@@ -68,7 +68,7 @@ function _fill_certificate_options()
 
 function contrail_config_cassandra()
 {
-    [[ "$USE_EXTERNAL_CASSANDRA" == "False" ]] && return
+    [[ "$USE_EXTERNAL_CASSANDRA" == "True" ]] && return
 
     sudo sed -i "s/^\#MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"$CASS_MAX_HEAP_SIZE\"/" /etc/cassandra/cassandra-env.sh
     sudo sed -i "s/^\#HEAP_NEWSIZE=.*/HEAP_NEWSIZE=\"$CASS_HEAP_NEWSIZE\"/" /etc/cassandra/cassandra-env.sh
