@@ -3,6 +3,8 @@ Q_PLUGIN=${Q_PLUGIN:-opencontrail}
 Q_L3_ENABLED=${Q_L3_ENABLED:-True}
 # This is false by default in pre-mitaka releases
 Q_L3_ROUTER_PER_TENANT=${Q_L3_ROUTER_PER_TENANT:-True}
+# Contrail doesn't rely on provider networks
+Q_USE_PROVIDERNET_FOR_PUBLIC=${Q_USE_PROVIDERNET_FOR_PUBLIC:-False}
 
 # Contrail neutron plugin configuration functions must be sourced early as
 # devstack calls has_neutron_plugin_security_group before settings are sourced

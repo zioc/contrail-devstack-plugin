@@ -4,7 +4,7 @@
 # Make sure nova-network and neutron agents aren't enabled
 disable_service n-net q-agt q-l3 q-dhcp q-meta q-dhcp q-lbaas
 
-CONTRAIL_SVC_LIST="vrouter api-srv disco svc-mon schema control collector analytic-api query-engine dns named ui-jobs ui-webs"
+CONTRAIL_SVC_LIST="contrail-vrouter contrail-api contrail-disco contrail-svc contrail-schema contrail-control contrail-collector contrail-analytic contrail-query contrail-dns contrail-named contrail-ui-jobs contrail-ui-webs"
 
 # Check if some specific services have been enbled in local.conf
 if ! is_service_enabled $CONTRAIL_SVC_LIST; then
@@ -35,26 +35,17 @@ CONTRAIL_BRANCH=${CONTRAIL_BRANCH:-master}
 
 # Discovery service was removed since R4.0 Contrail release
 if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
-    disable_service disco
-fi
-
-# FIXME: Remove nodejs on Xenial as it depends on libuv which conflicts with
-# the libuv manually installed for cassandra cpp drivers
-if _vercmp $os_RELEASE "==" '16.04'; then
-    disable_service ui-jobs ui-webs
+    disable_service contrail-disco
 fi
 
 CONTRAIL_DEST=${CONTRAIL_DEST:-$DEST/contrail}
 
-SCONS_TARGET=${SCONS_TARGET:-production}
-SCONS_JOBS=${SCONS_JOBS:-1}
-
-SCONS_ARGS="--opt=$SCONS_TARGET --root=/ install"
-if [ $SCONS_JOBS -gt 1 ]; then
-    SCONS_ARGS="-j$SCONS_JOBS $SCONS_ARGS"
-fi
-
-BUILD_OPT=${BUILD_OPT:-production}
+SCONS_TARGET=${SCONS_TARGET:-debug}
+command -v nproc > /dev/null && SCONS_JOBS=${SCONS_JOBS:-$[$(nproc) + 1]} || SCONS_JOBS=${SCONS_JOBS:-1}
+SCONS_ARGS="-j$SCONS_JOBS --opt=$SCONS_TARGET --root=/"
+WITH_DPDK_SUPPORT=$(trueorfalse False WITH_DPDK_SUPPORT)
+[[ "$WITH_DPDK_SUPPORT" == "False" ]] && SCONS_ARGS="$SCONS_ARGS --without-dpdk"
+SCONS_ARGS="$SCONS_ARGS install"
 
 # vrouter kernel module options
 #------------------------------
@@ -69,7 +60,7 @@ VR_KMOD_OPTS=${VR_KMOD_OPTS:-"vr_flow_entries=4096 vr_oflow_entries=512 vr_bridg
 
 MULTI_TENANCY=${MULTI_TENANCY:-False}
 
-USE_EXTERNAL_CASSANDRA=$(trueorfalse True USE_EXTERNAL_CASSANDRA)
+USE_EXTERNAL_CASSANDRA=$(trueorfalse False USE_EXTERNAL_CASSANDRA)
 CASS_MAX_HEAP_SIZE=${CASS_MAX_HEAP_SIZE:-"500M"}
 CASS_HEAP_NEWSIZE=${CASS_HEAP_NEWSIZE:-"100M"}
 

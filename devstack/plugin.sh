@@ -34,11 +34,11 @@ function fetch_contrail() {
 }
 
 function install_cassandra() {
-    [[ "$USE_EXTERNAL_CASSANDRA" == "False" ]] && return
+    [[ "$USE_EXTERNAL_CASSANDRA" == "True" ]] && return
 
     if ! which cassandra > /dev/null 2>&1 ; then
         echo "Installing cassanadra"
-        echo "deb http://www.apache.org/dist/cassandra/debian 21x main" | \
+        echo "deb http://www.apache.org/dist/cassandra/debian 34x main" | \
         sudo tee /etc/apt/sources.list.d/cassandra.list
         # Use curl instead of gpg as it deals better with proxies
         curl -sL --retry 5 "https://www.apache.org/dist/cassandra/KEYS" | sudo apt-key add -
@@ -47,7 +47,9 @@ function install_cassandra() {
         # sudo -E apt-get install -y cassandra
         # On Xenial, force to use jre 8. jre 9 is install by default and conflicts with Cassandra 2.1
         if _vercmp $os_RELEASE "==" '16.04'; then
-            install_package openjdk-8-jre openjdk-8-jre-headless
+            # install_package openjdk-8-jre openjdk-8-jre-headless
+            wget http://launchpadlibrarian.net/109052632/python-support_1.0.15_all.deb
+            sudo dpkg -i python-support_1.0.15_all.deb  # dependence to cassandra deb package no available anymore on Ubuntu repo
         fi
         install_package cassandra
     fi
@@ -60,24 +62,24 @@ function install_cassandra_cpp_driver() {
     fi
 
     echo "Installing cassanadra CPP drivers"
-    TMP_PKG_DIR=$(mktemp -d)
-    cd $TMP_PKG_DIR
+    CASS_CPP_DIR=$CONTRAIL_DEST/third_party/cass-cpp-driver
+    git_clone https://github.com/datastax/cpp-driver.git $CASS_CPP_DIR 2.7.0
 
-    wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver_2.5.0-1_amd64.deb
-    wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver-dev_2.5.0-1_amd64.deb
-    wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/dependencies/libuv/v1.8.0/libuv_1.8.0-1_amd64.deb
-
-    sudo dpkg -i *.deb
+    mkdir -p $CASS_CPP_DIR/build
+    cd $CASS_CPP_DIR/build
+    cmake -DCMAKE_INSTALL_PREFIX=/usr ..
+    make
+    sudo make install
 
     cd $TOP_DIR
-    rm -Rf $TMP_PKG_DIR
 }
 
 function fetch_webui(){
     if [[ ! -e "$CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE" || "$RECLONE" == "True" ]]; then
         cd $CONTRAIL_DEST/contrail-web-core
-        sed -ie "s|webController\.path.*|webController\.path = \'$CONTRAIL_DEST/contrail-web-controller\';|" config/config.global.js
+        sed -ie "s|/usr/src/contrail|$CONTRAIL_DEST|g" config/config.global.js
         make fetch-pkgs-prod
+        npm rebuild
         make dev-env REPO=webController
         touch $CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE
         cd $TOP_DIR
@@ -138,7 +140,7 @@ function start_contrail() {
     STACK_SCREEN_NAME="$SCREEN_NAME"
     SCREEN_NAME=$CONTRAIL_SCREEN_NAME
 
-    USE_SCREEN=$(trueorfalse True USE_SCREEN)
+    USE_SCREEN=$(trueorfalse False USE_SCREEN)
     if [[ "$USE_SCREEN" == "True" ]]; then
         # Create a new named screen to run processes in
         screen -d -m -S $SCREEN_NAME -t shell -s /bin/bash
@@ -160,29 +162,38 @@ function start_contrail() {
     fi
 
     # Initialize the directory for service status check
-    init_service_check
+    type -p init_service_check && init_service_check
 
     # Ensure log directory will be writable and exists
     [ ! -d /var/log/contrail ] && sudo mkdir /var/log/contrail
     sudo chmod 777 /var/log/contrail
 
-    run_process vrouter "sudo contrail-vrouter-agent --config_file=/etc/contrail/contrail-vrouter-agent.conf"
-    run_process api-srv "contrail-api --conf_file /etc/contrail/contrail-api.conf"
+    run_process contrail-vrouter "$(which contrail-vrouter-agent) --config_file=/etc/contrail/contrail-vrouter-agent.conf" root root
+    run_process contrail-api "$(which contrail-api) --conf_file /etc/contrail/contrail-api.conf"
     # Wait for api to be ready, as it creates cassandra CF required for disco to start
-    is_service_enabled disco && is_service_enabled api-srv && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
-    run_process disco "contrail-discovery --conf_file /etc/contrail/contrail-discovery.conf"
-    run_process svc-mon "contrail-svc-monitor --conf_file /etc/contrail/contrail-svc-monitor.conf"
-    run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
-    run_process control "sudo contrail-control --conf_file /etc/contrail/contrail-control.conf"
-    run_process collector "contrail-collector --conf_file /etc/contrail/contrail-collector.conf"
-    run_process analytic-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
-    run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
-    run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
+    is_service_enabled contrail-disco && is_service_enabled contrail-api && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
+    run_process contrail-disco "$(which contrail-discovery) --conf_file /etc/contrail/contrail-discovery.conf"
+    run_process contrail-svc "$(which contrail-svc-monitor) --conf_file /etc/contrail/contrail-svc-monitor.conf"
+    run_process contrail-schema "$(which contrail-schema) --conf_file /etc/contrail/contrail-schema.conf"
+    run_process contrail-control "$(which contrail-control) --conf_file /etc/contrail/contrail-control.conf" root root
+    run_process contrail-collector "$(which contrail-collector) --conf_file /etc/contrail/contrail-collector.conf"
+    run_process contrail-analytic "$(which contrail-analytics-api) --conf_file /etc/contrail/contrail-analytics-api.conf"
+    run_process contrail-query "$(which contrail-query-engine) --conf_file /etc/contrail/contrail-query-engine.conf"
+    run_process contrail-dns "$(which contrail-dns) --conf_file /etc/contrail/dns/contrail-dns.conf"
     #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in /proc/[pid]/cmdline to retrieve bind status
-    run_process named "sudo /usr/bin/contrail-named -g -c /etc/contrail/dns/contrail-named.conf"
-
-    run_process ui-jobs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs jobServerStart.js"
-    run_process ui-webs "cd $CONTRAIL_DEST/contrail-web-core; sudo nodejs webServerStart.js"
+    run_process contrail-named "$(which contrail-named) -g -c /etc/contrail/dns/contrail-named.conf" root root
+    # NodeJS needs to be run in the source UI foder. Hack to set working directory in the systemd unit file
+    for ui_type in job web; do
+        local service_name="contrail-ui-${ui_type}s"
+        local systemd_service="devstack@${service_name}.service"
+        local unitfile=$SYSTEMD_DIR/$systemd_service
+        local service_binary="${ui_type}ServerStart.js"
+        run_process $service_name "$(which nodejs) $service_binary" root root
+        $SYSTEMCTL stop $systemd_service
+        iniset -sudo $unitfile "Service" "WorkingDirectory" "$CONTRAIL_DEST/contrail-web-core"
+        $SYSTEMCTL daemon-reload
+        $SYSTEMCTL start $systemd_service
+    done
 
     SCREEN_NAME="$STACK_SCREEN_NAME"
 }
@@ -280,7 +291,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
     fetch_contrail
 
-    if is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
+    if is_service_enabled contrail-api contrail-disco contrail-svc contrail-schema contrail-control contrail-collector contrail-analytic contrail-query contrail-dns contrail-named; then
         install_cassandra
         install_cassandra_cpp_driver
 
@@ -302,6 +313,9 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
         echo_summary "Building contrail"
         cd $CONTRAIL_DEST
+        # TODO(ethuleau): Don't install fabric package due to bug
+        # https://bugs.launchpad.net/juniperopenstack/+bug/1757518
+        sed -ie "/fabric-ansible/ s/^/#/" controller/src/config/SConscript
         sudo -E scons $SCONS_ARGS
         cd $TOP_DIR
 
@@ -315,13 +329,13 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         # Recent OpenStack release require at least Thrift 0.10.0.
         sudo pip install -U thrift==0.9.3
     fi
-    if is_service_enabled vrouter; then
+    if is_service_enabled contrail-vrouter; then
         echo_summary "Building contrail vrouter"
 
         cd $CONTRAIL_DEST
 
         # Build vrouter-agent if not done earlier
-        if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
+        if ! is_service_enabled contrail-api contrail-disco contrail-svc contrail-schema contrail-control contrail-collector contrail-analytic contrail-query contrail-dns contrail-named; then
             sudo -E scons $SCONS_ARGS controller/src/vnsw
         fi
 
@@ -335,7 +349,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
 
         cd $TOP_DIR
     fi
-    if is_service_enabled ui-webs ui-jobs; then
+    if is_service_enabled contrail-ui-webs contrail-ui-jobs; then
         # Fetch 3rd party and install webui
         fetch_webui
     fi
@@ -352,6 +366,9 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
 
     echo_summary "Configuring contrail"
 
+elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
+    # Called after services configuration
+
     source $CONTRAIL_PLUGIN_DIR/lib/contrail_config
     # Use bash completion features to conveniently run all config functions
     for config_func in $(compgen -A function contrail_config_); do
@@ -361,9 +378,6 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
     # Force vrouter module re-insertion if asked
     [[ "$RELOAD_VROUTER" == "True" ]] && remove_vrouter
     insert_vrouter
-
-elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
-    # Called after services configuration
 
     echo_summary "Starting contrail"
     #FIXME: Contrail api must be started before neutron, this is why it must be done here.
@@ -375,17 +389,17 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
     local provision_api_args="--api_server_ip $SERVICE_HOST --api_server_port 8082 \
         --admin_user $CONTRAIL_ADMIN_USER --admin_password $CONTRAIL_ADMIN_PASSWORD --admin_tenant_name $CONTRAIL_ADMIN_PROJECT"
 
-    if is_service_enabled vrouter ; then
+    if is_service_enabled contrail-vrouter ; then
         /usr/share/contrail/provision_vrouter.py $provision_api_args \
             --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $VHOST_INTERFACE_IP \
             || /bin/true    # Failure is not critical
     fi
-    if is_service_enabled control ; then
+    if is_service_enabled contrail-control ; then
         /usr/share/contrail/provision_control.py $provision_api_args \
             --oper add --host_name $CONTRAIL_HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 \
             || /bin/true    # Failure is not critical
     fi
-    if is_service_enabled api-srv ; then
+    if is_service_enabled contrail-api ; then
         /usr/share/contrail/provision_linklocal.py $provision_api_args \
             --oper add --linklocal_service_name metadata --linklocal_service_ip 169.254.169.254 \
             --linklocal_service_port 80 --ipfabric_service_ip $NOVA_SERVICE_HOST --ipfabric_service_port 8775 \
@@ -405,21 +419,9 @@ elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
     :
 
 elif [[ "$1" == "unstack" ]]; then
-    STACK_SCREEN_NAME="$SCREEN_NAME"
-    SCREEN_NAME=$CONTRAIL_SCREEN_NAME
     for service in ${CONTRAIL_SVC_LIST}; do
-        # Devstack 'stop_process' function cannot kill process ran as root or another stack's user
-        # If we use systemd, all process can be stop as systemctl command is run as root
-        if [[ "$USE_SCREEN" = "True" && "vrouter control named ui-jobs ui-webs" =~ (^|[[:space:]])"$service"($|[[:space:]]) ]] ; then
-            if [[ -r $SERVICE_DIR/$SCREEN_NAME/$service.pid ]]; then
-                sudo pkill -g $(cat $SERVICE_DIR/$SCREEN_NAME/$service.pid)
-                rm $SERVICE_DIR/$SCREEN_NAME/$service.pid
-            fi
-	else
-            stop_process $service
-	fi
+        stop_process $service
     done
-    SCREEN_NAME="$STACK_SCREEN_NAME"
 
     # Clean up the remainder of the screen processes
     SCREEN=$(which screen)

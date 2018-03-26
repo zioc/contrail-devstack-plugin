@@ -39,12 +39,10 @@ fi
 
 function _fill_keystone_options()
 {
-    iniset -sudo $1 KEYSTONE auth_host $KEYSTONE_AUTH_HOST
+    iniset -sudo $1 KEYSTONE auth_url $KEYSTONE_SERVICE_URI
     iniset -sudo $1 KEYSTONE admin_user $CONTRAIL_ADMIN_USER
     iniset -sudo $1 KEYSTONE admin_password $CONTRAIL_ADMIN_PASSWORD
     iniset -sudo $1 KEYSTONE admin_tenant_name $CONTRAIL_ADMIN_PROJECT
-    iniset -sudo $1 KEYSTONE auth_port 5000
-    iniset -sudo $1 KEYSTONE auth_protocol http
     if [ "$USE_MEMCACHE" == "True" ]; then #FIXME
         iniset -sudo $config_file KEYSTONE memcache_servers '127.0.0.1:11211'
     fi
@@ -70,7 +68,7 @@ function _fill_certificate_options()
 
 function contrail_config_cassandra()
 {
-    [[ "$USE_EXTERNAL_CASSANDRA" == "False" ]] && return
+    [[ "$USE_EXTERNAL_CASSANDRA" == "True" ]] && return
 
     sudo sed -i "s/^\#MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE=\"$CASS_MAX_HEAP_SIZE\"/" /etc/cassandra/cassandra-env.sh
     sudo sed -i "s/^\#HEAP_NEWSIZE=.*/HEAP_NEWSIZE=\"$CASS_HEAP_NEWSIZE\"/" /etc/cassandra/cassandra-env.sh
@@ -79,6 +77,7 @@ function contrail_config_cassandra()
 
     #NOTE: it isn't safe to use SERVICE_LISTEN_ADDRESS here, as cassandra can't bind 0.0.0.0
     sudo sed -i "s/listen_address:.*/listen_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
+    sudo sed -i "s/start_rpc: false/start_rpc: true/" /etc/cassandra/cassandra.yaml
     sudo sed -i "s/rpc_address:.*/rpc_address: $CASSANDRA_IP/" /etc/cassandra/cassandra.yaml
 
     sudo sed -i "s/seeds:.*/seeds: $CASSANDRA_IP_LIST/" /etc/cassandra/cassandra.yaml
@@ -292,6 +291,10 @@ function contrail_config_collector()
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
         iniset -sudo $config_file DEFAULT zookeeper_server_list "$ZOOKEEPER_IP_PORT_LIST"
+        iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
+        iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
+        iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file CONFIGDB config_db_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
     fi
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
@@ -413,7 +416,7 @@ function contrail_config_vrouter_agent()
     else
         iniset -sudo $config_file DEFAULT collectors "$COLLECTOR_IP_PORT_LIST"
         iniset -sudo $config_file CONTROL-NODE servers "$CONTROL_IP_PORT_LIST"
-        if is_service_enabled dns; then
+        if is_service_enabled contrail-dns; then
             iniset -sudo $config_file DNS servers "$DNS_IP_PORT_LIST"
         fi
     fi
@@ -441,7 +444,7 @@ function contrail_config_vrouter_agent()
 
 function contrail_config_heat()
 {
-    if is_service_enabled heat; then
+    if pip show -q heat; then
         setup_package $CONTRAIL_DEST/openstack/contrail-heat -e
 
         iniset $HEAT_CONF DEFAULT plugin_dirs \
@@ -520,9 +523,15 @@ function contrail_config_webui()
 {
     local config_file="$CONTRAIL_DEST/contrail-web-core/config/config.global.js"
 
-    if is_service_enabled ui-webs ui-jobs; then
+    if is_service_enabled contrail-ui-webs contrail-ui-jobs; then
         sed -ie "s|discoveryService\.enable.*|discoveryService\.enable = false;|" $config_file
-        sed -ie "s|regions\.RegionOne.*|regions\.RegionOne = \'http://$KEYSTONE_AUTH_HOST:5000/v2.0\';|" $config_file
+        quoted_ips=$(for ip in $CASSANDRA_IP_LIST; do echo "'$ip'"; done)
+        sed -ie "s|config\.cassandra\.server_ips.*|config\.cassandra\.server_ips = [$quoted_ips];|" $config_file
+        sed -ie "s|regions\.$REGION_NAME.*|regions\.RegionOne = \'$KEYSTONE_AUTH_URI\';|" $config_file
+        sed -ie "s|identityManager\.authProtocol.*|identityManager\.authProtocol = \'$KEYSTONE_AUTH_PROTOCOL\';|" $config_file
         sed -ie "s|identityManager\.ip.*|identityManager\.ip = \'$KEYSTONE_AUTH_HOST\';|" $config_file
+        sed -ie "s|identityManager\.port.*|identityManager\.port = \'80\';|" $config_file
+        sed -ie "s|identityManager\.urlPrefix.*|identityManager\.urlPrefix = \'/identity\';|" $config_file
+        sed -ie "s|identityManager\.apiVersion.*|identityManager\.apiVersion = [\'v$IDENTITY_API_VERSION\'];|" $config_file
     fi
 }

@@ -21,7 +21,7 @@ libboost-program-options-dev
 libboost-regex-dev
 libboost-system-dev
 libboost-python-dev
-
+libboost-thread-dev
 
 libtbb-dev
 liblog4cplus-dev
@@ -46,12 +46,13 @@ libipfix-dev
 
 # FIXME: Remove nodejs on Xenial as it depends on libuv which conflicts with the
 # libuv manually installed for cassandra cpp drivers
-nodejs # 14.04
-nodejs-legacy # 14.04
-npm # 14.04
+libuv1-dev
+nodejs
+nodejs-legacy
+npm
 zookeeperd
-ifmap-server # 14.04
 redis-server
+liburcu-dev
 
 google-mock
 libgoogle-perftools-dev
