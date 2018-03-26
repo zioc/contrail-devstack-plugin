@@ -316,6 +316,8 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         # TODO(ethuleau): Don't install fabric package due to bug
         # https://bugs.launchpad.net/juniperopenstack/+bug/1757518
         sed -ie "/fabric-ansible/ s/^/#/" controller/src/config/SConscript
+        # Don't download, patch and build ipfix lib from third-party package
+        sed -ie "/ipfix/ s/^/#/" controller/lib/SConscript
         sudo -E scons $SCONS_ARGS
         cd $TOP_DIR
 
