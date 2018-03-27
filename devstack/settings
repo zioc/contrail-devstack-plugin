@@ -41,10 +41,13 @@ fi
 CONTRAIL_DEST=${CONTRAIL_DEST:-$DEST/contrail}
 
 SCONS_TARGET=${SCONS_TARGET:-debug}
+
 command -v nproc > /dev/null && SCONS_JOBS=${SCONS_JOBS:-$[$(nproc) + 1]} || SCONS_JOBS=${SCONS_JOBS:-1}
 SCONS_ARGS="-j$SCONS_JOBS --opt=$SCONS_TARGET --root=/"
+
 WITH_DPDK_SUPPORT=$(trueorfalse False WITH_DPDK_SUPPORT)
-[[ "$WITH_DPDK_SUPPORT" == "False" ]] && SCONS_ARGS="$SCONS_ARGS --without-dpdk"
+[[ "$WITH_DPDK_SUPPORT" == "False" ]] && _vercmp $CONTRAIL_BRANCH ">" R4.1 && SCONS_ARGS="$SCONS_ARGS --without-dpdk"
+
 SCONS_ARGS="$SCONS_ARGS install"
 
 # vrouter kernel module options
