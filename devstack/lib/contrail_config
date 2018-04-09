@@ -124,8 +124,13 @@ function contrail_config_api()
         iniset -sudo $config_file DEFAULTS ifmap_password 'api-server'
     fi
 
-    iniset -sudo $config_file DEFAULTS multi_tenancy $MULTI_TENANCY
-    iniset -sudo $config_file DEFAULTS multi_tenancy_with_rbac $MULTI_TENANCY
+    if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
+        iniset -sudo $config_file DEFAULTS multi_tenancy $MULTI_TENANCY
+        iniset -sudo $config_file DEFAULTS multi_tenancy_with_rbac $MULTI_TENANCY
+    else
+        iniset -sudo $config_file DEFAULTS aaa_mode $AAA_MODE
+    fi
+
     iniset -sudo $config_file DEFAULTS auth keystone
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
