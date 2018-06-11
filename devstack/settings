@@ -60,8 +60,7 @@ VR_KMOD_OPTS=${VR_KMOD_OPTS:-"vr_flow_entries=4096 vr_oflow_entries=512 vr_bridg
 
 # Services configuration
 #-----------------------
-
-MULTI_TENANCY=${MULTI_TENANCY:-False}
+AAA_MODE=${AAA_MODE:-no-auth}
 
 USE_EXTERNAL_CASSANDRA=$(trueorfalse False USE_EXTERNAL_CASSANDRA)
 CASS_MAX_HEAP_SIZE=${CASS_MAX_HEAP_SIZE:-"500M"}

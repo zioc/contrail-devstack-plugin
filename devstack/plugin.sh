@@ -407,6 +407,12 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
             --oper add --linklocal_service_name metadata --linklocal_service_ip 169.254.169.254 \
             --linklocal_service_port 80 --ipfabric_service_ip $NOVA_SERVICE_HOST --ipfabric_service_port 8775 \
             || /bin/true    # Failure is not critical
+        if [[ $AAA_MODE != 'no-auth' ]]; then
+            echo y | python $CONTRAIL_DEST/controller/src/config/utils/rbacutil.py \
+                --server $SERVICE_HOST:8082 --os-username $CONTRAIL_ADMIN_USER --os-password $CONTRAIL_ADMIN_PASSWORD --os-tenant-name $CONTRAIL_ADMIN_PROJECT \
+                --name "default-global-system-config:default-api-access-list" --rule "* member:CRUD" --op add-rule \
+                || /bin/true    # Failure is not critical
+        fi
     fi
     if [[ "$Q_L3_ENABLED" == "True" ]]; then
         sudo /usr/share/contrail/provision_vgw_interface.py --oper create \
