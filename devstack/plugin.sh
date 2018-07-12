@@ -170,8 +170,8 @@ function start_contrail() {
 
     run_process contrail-vrouter "$(which contrail-vrouter-agent) --config_file=/etc/contrail/contrail-vrouter-agent.conf" root root
     run_process contrail-api "$(which contrail-api) --conf_file /etc/contrail/contrail-api.conf"
-    # Wait for api to be ready, as it creates cassandra CF required for disco to start
-    is_service_enabled contrail-disco && is_service_enabled contrail-api && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
+    # Wait for api to be ready as it is used by other services and provisioning scripts used just after
+    is_service_enabled contrail-api && wget --no-proxy --retry-connrefused --no-check-certificate --waitretry=1 -t 60 -q -O /dev/null http://$APISERVER_IP:8082 || true
     run_process contrail-disco "$(which contrail-discovery) --conf_file /etc/contrail/contrail-discovery.conf"
     run_process contrail-svc "$(which contrail-svc-monitor) --conf_file /etc/contrail/contrail-svc-monitor.conf"
     run_process contrail-schema "$(which contrail-schema) --conf_file /etc/contrail/contrail-schema.conf"
