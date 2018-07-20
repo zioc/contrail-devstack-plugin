@@ -504,7 +504,7 @@ function contrail_config_qemu()
     fi
 
     if virsh net-info default >/dev/null 2>&1; then
-        virsh net-destroy default
+        virsh net-destroy default || true
         virsh net-undefine default
     fi
 
