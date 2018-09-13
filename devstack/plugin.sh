@@ -185,6 +185,7 @@ function start_contrail() {
     # NodeJS needs to be run in the source UI foder. Hack to set working directory in the systemd unit file
     for ui_type in job web; do
         local service_name="contrail-ui-${ui_type}s"
+        is_service_enabled $service_name || continue
         local systemd_service="devstack@${service_name}.service"
         local unitfile=$SYSTEMD_DIR/$systemd_service
         local service_binary="${ui_type}ServerStart.js"
