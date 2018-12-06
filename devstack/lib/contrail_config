@@ -85,6 +85,7 @@ function contrail_config_cassandra()
     stop_service cassandra || true
     sudo rm -Rf /var/lib/cassandra/*
     start_service cassandra
+    timeout $SERVICE_TIMEOUT sh -c "while ! nc -z $APISERVER_IP 9160; do sleep 1; done" || die $LINENO "cassandra thrift API did not start"
 }
 
 function contrail_config_zookeeper()
@@ -124,9 +125,11 @@ function contrail_config_api()
         iniset -sudo $config_file DEFAULTS ifmap_password 'api-server'
     fi
 
-    iniset -sudo $config_file DEFAULTS multi_tenancy $MULTI_TENANCY
-    iniset -sudo $config_file DEFAULTS multi_tenancy_with_rbac $MULTI_TENANCY
     iniset -sudo $config_file DEFAULTS auth keystone
+    iniset -sudo $config_file DEFAULTS aaa_mode $AAA_MODE
+    if [[ $AAA_MODE != 'no-auth' ]]; then
+        iniset -sudo $config_file DEFAULTS global_read_only_role service
+    fi
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
         iniset -sudo $config_file DEFAULTS disc_server_ip $DISCOVERY_IP
@@ -199,9 +202,7 @@ function contrail_config_svc_monitor()
     fi
 
     iniset -sudo $config_file SCHEDULER analytics_server_list "$ANALYTICS_IP_PORT_LIST"
-    if [[ "$MULTI_TENANCY" == "False" ]]; then
-        iniset -sudo $config_file SCHEDULER aaa_mode no-auth
-    fi
+    iniset -sudo $config_file SCHEDULER aaa_mode $AAA_MODE
 
     iniset -sudo $config_file DEFAULTS cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
     iniset -sudo $config_file DEFAULTS zk_server_ip "$ZOOKEEPER_IP_LIST"
@@ -242,11 +243,10 @@ function contrail_config_api_lib()
 
     iniset -sudo $config_file global WEB_SERVER $APISERVER_IP
     iniset -sudo $config_file global WEB_PORT 8082
-    iniset -sudo $config_file global BASE_URL  '/'
+    iniset -sudo $config_file global BASE_URL '/'
 
-    iniset -sudo $config_file auth AUTHN_TYPE  'keystone'
-    iniset -sudo $config_file auth AUTHN_PORT  5000
-    iniset -sudo $config_file auth AUTHN_SERVER $KEYSTONE_AUTH_HOST
+    iniset -sudo $config_file auth AUTHN_TYPE 'keystone'
+    iniset -sudo $config_file auth AUTHN_TOKEN_URL "${KEYSTONE_SERVICE_URI}/v3/auth/tokens"
 }
 
 function contrail_config_control()
@@ -325,10 +325,7 @@ function contrail_config_analytics_api()
         iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
     else
         iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
-
-        if [[ "$MULTI_TENANCY" == "False" ]]; then
-            iniset -sudo $config_file DEFAULT aaa_mode no-auth
-        fi
+        iniset -sudo $config_file DEFAULT aaa_mode $AAA_MODE
     fi
 
     if _vercmp $CONTRAIL_BRANCH "<" R4.0; then

@@ -27,6 +27,16 @@ function neutron_plugin_configure_service() {
     local PY_PLUGIN_PATH=$(python -c "import neutron_plugin_contrail; print neutron_plugin_contrail.__path__[0]")
     iniset $NEUTRON_CONF quotas quota_driver neutron_plugin_contrail.plugins.opencontrail.quota.driver.QuotaDriver
     iniset $NEUTRON_CONF DEFAULT api_extensions_path extensions:$PY_PLUGIN_PATH/extensions
+    if [[ $AAA_MODE != 'no-auth' ]]; then
+        # Add Contrail middleware to set the authentication token in the
+        # request thread as it needed by VNC API client in the core driver
+        NEUTRON_API_PASTE_FILE=$NEUTRON_CONF_DIR/api-paste.ini
+        iniset $NEUTRON_API_PASTE_FILE filter:user_token paste.filter_factory neutron_plugin_contrail.plugins.opencontrail.neutron_middleware:token_factory
+        array=($(iniget_multiline $NEUTRON_API_PASTE_FILE composite:neutronapi_v2_0 keystone))
+        index=$(echo ${array[@]/extensions//} | cut -d/ -f1 | wc -w | tr -d ' ')
+        new_arr=( ${array[@]:0:$index} 'user_token' ${array[@]:$index} )
+        iniset $NEUTRON_API_PASTE_FILE composite:neutronapi_v2_0 keystone "$(echo ${new_arr[@]})"
+    fi
 }
 
 function neutron_plugin_setup_interface_driver() {
