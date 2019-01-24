@@ -128,3 +128,5 @@ PARENT_SCRIPT=$(caller 2 | awk '{print $3}')
 if [[ -n "$PARENT_SCRIPT" && "$(basename $PARENT_SCRIPT)"  == "stack.sh" ]]; then
     source $CONTRAIL_PLUGIN_DIR/plugin.sh stack source
 fi
+
+CONTRAIL_RABBIT_VHOST=${CONTRAIL_RABBIT_VHOST:-'contrail'}
