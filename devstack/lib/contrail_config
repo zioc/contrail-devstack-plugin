@@ -54,6 +54,7 @@ function _fill_rabbit_options()
     iniset -sudo $config_file DEFAULTS rabbit_port '5672'
     iniset -sudo $config_file DEFAULTS rabbit_user $RABBIT_USERID
     iniset -sudo $config_file DEFAULTS rabbit_password $RABBIT_PASSWORD
+    iniset -sudo $config_file DEFAULTS rabbit_vhost $CONTRAIL_RABBIT_VHOST
 }
 
 function _fill_certificate_options()
