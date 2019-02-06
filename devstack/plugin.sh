@@ -328,9 +328,6 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
             pip_install discoveryclient
         fi
-        # Force to use the version 0.9.3 of the Thrift python library as it is a requirements for Pycassa library.
-        # Recent OpenStack release require at least Thrift 0.10.0.
-        sudo pip install -U thrift==0.9.3
     fi
     if is_service_enabled contrail-vrouter; then
         echo_summary "Building contrail vrouter"
@@ -366,6 +363,11 @@ elif [[ "$1" == "stack" && "$2" == "install" ]]; then
         #FIXME? as contrail neutron plugin misses a setup.cfg, we wan't use setup_develop
         setup_package $CONTRAIL_DEST/openstack/neutron_plugin -e
     fi
+
+    # Force to use the version 0.9.3 of the Thrift python library as it is a
+    # requirements for Pycassa library. Recent OpenStack release require at
+    # least Thrift 0.10.0.
+    sudo pip install -U thrift==0.9.3
 
     echo_summary "Configuring contrail"
 
