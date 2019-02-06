@@ -54,6 +54,7 @@ function _fill_rabbit_options()
     iniset -sudo $config_file DEFAULTS rabbit_port '5672'
     iniset -sudo $config_file DEFAULTS rabbit_user $RABBIT_USERID
     iniset -sudo $config_file DEFAULTS rabbit_password $RABBIT_PASSWORD
+    rpc_backend_add_vhost $CONTRAIL_RABBIT_VHOST
     iniset -sudo $config_file DEFAULTS rabbit_vhost $CONTRAIL_RABBIT_VHOST
 }
 
@@ -150,6 +151,10 @@ function contrail_config_api()
     iniset -sudo $config_file DEFAULTS log_local 1
 
     iniset -sudo $config_file DEFAULTS apply_subnet_host_routes True
+
+    if is_service_enabled q-fwaas-v2; then
+        iniset -sudo $config_file NEUTRON fwaas_enabled True
+    fi
 
     _fill_keystone_options $config_file
     _fill_rabbit_options $config_file
@@ -268,6 +273,7 @@ function contrail_config_control()
         iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
         iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
         iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file CONFIGDB rabbitmq_vhost $CONTRAIL_RABBIT_VHOST
         iniset -sudo $config_file CONFIGDB config_db_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
     fi
 
@@ -295,6 +301,7 @@ function contrail_config_collector()
         iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
         iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
         iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_HOST:'5672'
+        iniset -sudo $config_file CONFIGDB rabbitmq_vhost $CONTRAIL_RABBIT_VHOST
         iniset -sudo $config_file CONFIGDB config_db_server_list "$CASSANDRA_CQL_IP_PORT_LIST"
     fi
 
