@@ -17,7 +17,7 @@ bottle==0.12.8
 cfgm_common
 ConfigParser
 consistent-hash
-gevent==1.1a2
+gevent==1.1.2
 geventhttpclient==1.0a
 kazoo
 kombu
@@ -37,3 +37,4 @@ sseclient
 stevedore
 thrift==0.9.3
 xmltodict
+pycrypto
