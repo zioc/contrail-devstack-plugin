@@ -29,7 +29,7 @@ function fetch_contrail() {
     fi
 
     if [[ ! -e "$CONTRAIL_DEST/third_party/FETCH_DONE" || "$RECLONE" = "True" ]]; then
-        python $CONTRAIL_DEST/third_party/fetch_packages.py && touch "$CONTRAIL_DEST/third_party/FETCH_DONE"
+        python3 $CONTRAIL_DEST/third_party/fetch_packages.py && touch "$CONTRAIL_DEST/third_party/FETCH_DONE"
     fi
 }
 
