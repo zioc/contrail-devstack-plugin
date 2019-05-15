@@ -29,7 +29,7 @@ function fetch_contrail() {
     fi
 
     if [[ ! -e "$CONTRAIL_DEST/third_party/FETCH_DONE" || "$RECLONE" = "True" ]]; then
-        python $CONTRAIL_DEST/third_party/fetch_packages.py && touch "$CONTRAIL_DEST/third_party/FETCH_DONE"
+        python3 $CONTRAIL_DEST/third_party/fetch_packages.py && touch "$CONTRAIL_DEST/third_party/FETCH_DONE"
     fi
 }
 
@@ -251,24 +251,23 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
 				Pin: release l=OpenContrail
 				Pin-Priority: 50
 			EOF
-
-            if ! apt-cache policy | grep -q artful; then
-                # OpenContrail PPA only propose trusty release
-                sudo sed -i 's/xenial/trusty/' /etc/apt/sources.list.d/opencontrail-ubuntu-ppa-xenial.list
-                # For 16.04, backport rdkafka library from 16.10
-                sudo cp /etc/apt/sources.list /etc/apt/sources.list.d/artful.list
-                sudo sed -i 's/xenial/artful/' /etc/apt/sources.list.d/artful.list
-                cat <<- EOF | sudo tee /etc/apt/preferences.d/artful
-					Package: librdkafka*
-					Pin: release n=artful
-					Pin-Priority: 990
-
-					Package: *
-					Pin: release n=artful
-					Pin-Priority: 50
-				EOF
-            fi
+            # OpenContrail PPA only propose trusty release
+            sudo sed -i 's/xenial/trusty/' /etc/apt/sources.list.d/opencontrail-ubuntu-ppa-xenial.list
         fi
+    fi
+    if _vercmp $os_RELEASE "==" '16.04' && ! apt-cache policy | grep -q bionic; then
+        # For 16.04, backport rdkafka library from 18.04
+        sudo cp /etc/apt/sources.list /etc/apt/sources.list.d/bionic.list
+        sudo sed -i 's/xenial/bionic/' /etc/apt/sources.list.d/bionic.list
+        cat <<- EOF | sudo tee /etc/apt/preferences.d/bionic
+			Package: librdkafka*
+			Pin: release n=bionic
+			Pin-Priority: 990
+
+			Package: *
+			Pin: release n=bionic
+			Pin-Priority: 50
+		EOF
     fi
 
     #FIXME: workaround ifmap-server package issue (doesn't creates /etc/contrail but needs it to start)
