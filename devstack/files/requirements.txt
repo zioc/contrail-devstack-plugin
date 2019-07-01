@@ -14,7 +14,6 @@ contrail-api-cli   # as it's convenient
 
 bitarray>=0.8.0
 bottle==0.12.8
-cfgm_common
 ConfigParser
 consistent-hash
 gevent==1.1.2
