@@ -29,7 +29,7 @@ libcurl4-openssl-dev
 libprotobuf-dev
 protobuf-compiler
 
-librdkafka-dev
+librdkafka-dev # 18.04
 
 #libevent-dev
 #libxml2-dev

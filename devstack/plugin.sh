@@ -68,7 +68,26 @@ function install_cassandra_cpp_driver() {
     mkdir -p $CASS_CPP_DIR/build
     cd $CASS_CPP_DIR/build
     cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-    make
+    make -j$SCONS_JOBS
+    sudo make install
+
+    cd $TOP_DIR
+}
+
+function install_librdkafka(){
+    if ldconfig -v |grep -q librdkafka ; then
+        # Cassandra CPP lib already installed
+        return
+    fi
+
+    install_package zlib1g-dev libssl-dev libsasl2-dev libzstd-dev libpthread-stubs0-dev
+
+    LIBRDKAFKA_DIR=$CONTRAIL_DEST/third_party/librdkafka
+    git_clone https://github.com/edenhill/librdkafka $LIBRDKAFKA_DIR v0.11.6
+
+    cd $LIBRDKAFKA_DIR
+    ./configure --prefix=/usr
+    make -j$SCONS_JOBS
     sudo make install
 
     cd $TOP_DIR
@@ -235,39 +254,13 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
     if ! apt-cache policy | grep -q opencontrail; then
         sudo -E add-apt-repository -y ppa:opencontrail
         # pin ppa packages priority to prevent conflicts, only packages not found elsewhere will be installed from this ppa
-        if _vercmp $os_RELEASE "==" '14.04'; then
-            cat <<- EOF | sudo tee /etc/apt/preferences.d/contrail-ppa
-				Package: librdkafka*
-				Pin: release l=OpenContrail
-				Pin-Priority: 990
-
-				Package: *
-				Pin: release l=OpenContrail
-				Pin-Priority: 50
-			EOF
-        elif _vercmp $os_RELEASE "==" '16.04'; then
-            cat <<- EOF | sudo tee /etc/apt/preferences.d/contrail-ppa
-				Package: *
-				Pin: release l=OpenContrail
-				Pin-Priority: 50
-			EOF
-            # OpenContrail PPA only propose trusty release
-            sudo sed -i 's/xenial/trusty/' /etc/apt/sources.list.d/opencontrail-ubuntu-ppa-xenial.list
-        fi
-    fi
-    if _vercmp $os_RELEASE "==" '16.04' && ! apt-cache policy | grep -q bionic; then
-        # For 16.04, backport rdkafka library from 18.04
-        sudo cp /etc/apt/sources.list /etc/apt/sources.list.d/bionic.list
-        sudo sed -i 's/xenial/bionic/' /etc/apt/sources.list.d/bionic.list
-        cat <<- EOF | sudo tee /etc/apt/preferences.d/bionic
-			Package: librdkafka*
-			Pin: release n=bionic
-			Pin-Priority: 990
-
+        cat <<- EOF | sudo tee /etc/apt/preferences.d/contrail-ppa
 			Package: *
-			Pin: release n=bionic
+			Pin: release l=OpenContrail
 			Pin-Priority: 50
 		EOF
+        # OpenContrail PPA only propose trusty release
+        sudo sed -i 's/xenial/trusty/' /etc/apt/sources.list.d/opencontrail-ubuntu-ppa-xenial.list
     fi
 
     #FIXME: workaround ifmap-server package issue (doesn't creates /etc/contrail but needs it to start)
@@ -311,6 +304,10 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
             sudo chmod 0750 /var/log/contrail
         fi
 
+        if _vercmp $os_RELEASE '<' '18.04'; then
+            install_librdkafka
+        fi
+
         echo_summary "Building contrail"
         cd $CONTRAIL_DEST
         # TODO(ethuleau): Don't install fabric package due to bug
@@ -326,6 +323,11 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
         pip_install -r $CONTRAIL_PLUGIN_DIR/files/requirements.txt
         if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
             pip_install discoveryclient
+        fi
+        if _vercmp $CONTRAIL_BRANCH "<" R1908; then
+            pip_install cfgm_common
+        else
+            pip_install contrail-config-common
         fi
     fi
     if is_service_enabled contrail-vrouter; then
