@@ -16,7 +16,7 @@ bitarray>=0.8.0
 bottle==0.12.8
 ConfigParser
 consistent-hash
-gevent==1.1.2
+gevent==23.9.1
 geventhttpclient==1.0a
 kazoo
 kombu
